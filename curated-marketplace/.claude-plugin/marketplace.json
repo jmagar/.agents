@@ -1,0 +1,508 @@
+{
+    "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+    "name": "curated-marketplace",
+    "owner": {
+        "name": "jmagar",
+        "email": "jmagar@gmail.com"
+    },
+    "description": "Curated third-party and upstream Claude Code plugins — favored external plugins sourced from their original repos.",
+    "plugins": [
+        {
+            "name": "agent-browser",
+            "source": {
+                "source": "github",
+                "repo": "vercel-labs/agent-browser"
+            },
+            "description": "Browser automation plugin for agent-driven web app testing, inspection, and debugging."
+        },
+        {
+            "name": "agent-sdk-dev",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/anthropics/claude-plugins-official.git",
+                "path": "plugins/agent-sdk-dev"
+            },
+            "description": "Development kit for working with the Claude Agent SDK"
+        },
+        {
+            "name": "agent-teams",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/wshobson/agents.git",
+                "path": "plugins/agent-teams"
+            },
+            "description": "Orchestrate multi-agent teams for parallel code review, hypothesis-driven debugging, and coordinated feature development using Claude Code's Agent Teams"
+        },
+        {
+            "name": "beads",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/gastownhall/beads.git",
+                "path": "plugins/beads"
+            },
+            "description": "AI-supervised issue tracker for coding workflows"
+        },
+        {
+            "name": "beagle-ai",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/existential-birds/beagle.git",
+                "path": "plugins/beagle-ai"
+            },
+            "description": "Pydantic AI, LangGraph, DeepAgents, and Vercel AI SDK skills"
+        },
+        {
+            "name": "beagle-analysis",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/existential-birds/beagle.git",
+                "path": "plugins/beagle-analysis"
+            },
+            "description": "Architecture analysis, brainstorming, 12-Factor compliance, ADR generation, and LLM-as-judge"
+        },
+        {
+            "name": "beagle-python",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/existential-birds/beagle.git",
+                "path": "plugins/beagle-python"
+            },
+            "description": "Python, FastAPI, SQLAlchemy, PostgreSQL, and pytest code review"
+        },
+        {
+            "name": "beagle-react",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/existential-birds/beagle.git",
+                "path": "plugins/beagle-react"
+            },
+            "description": "React, React Flow, React Router, shadcn/ui, Tailwind, Vitest, and Zustand code review"
+        },
+        {
+            "name": "beagle-rust",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/existential-birds/beagle.git",
+                "path": "plugins/beagle-rust"
+            },
+            "description": "Rust, tokio, axum, serde, sqlx, and async concurrency code review"
+        },
+        {
+            "name": "chrome-devtools-mcp",
+            "source": {
+                "source": "url",
+                "url": "https://github.com/ChromeDevTools/chrome-devtools-mcp.git",
+                "sha": "c2d8009ff75f76bce1ec4cf79c2467b50d81725e"
+            },
+            "description": "Control and inspect a live Chrome browser from your coding agent. Record performance traces, analyze network requests, check console messages with source-mapped stack traces, and automate browser actions with Puppeteer."
+        },
+        {
+            "name": "claude-code-setup",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/anthropics/claude-plugins-official.git",
+                "path": "plugins/claude-code-setup"
+            },
+            "description": "Analyze codebases and recommend tailored Claude Code automations such as hooks, skills, MCP servers, and subagents."
+        },
+        {
+            "name": "claude-md-management",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/anthropics/claude-plugins-official.git",
+                "path": "plugins/claude-md-management"
+            },
+            "description": "Tools to maintain and improve CLAUDE.md files - audit quality, capture session learnings, and keep project memory current."
+        },
+        {
+            "name": "claude-session-driver",
+            "source": {
+                "source": "url",
+                "url": "https://github.com/obra/claude-session-driver.git"
+            },
+            "description": "Launch, control, and monitor other Claude Code sessions as workers via tmux"
+        },
+        {
+            "name": "code-documentation",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/wshobson/agents.git",
+                "path": "plugins/code-documentation"
+            },
+            "description": "Documentation generation, code explanation, and technical writing with automated doc generation and tutorial creation"
+        },
+        {
+            "name": "code-refactoring",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/wshobson/agents.git",
+                "path": "plugins/code-refactoring"
+            },
+            "description": "Code cleanup, refactoring automation, and technical debt management with context restoration"
+        },
+        {
+            "name": "code-review",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/anthropics/claude-plugins-official.git",
+                "path": "plugins/code-review"
+            },
+            "description": "Automated code review for pull requests using multiple specialized agents with confidence-based scoring to filter false positives"
+        },
+        {
+            "name": "code-simplifier",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/anthropics/claude-plugins-official.git",
+                "path": "plugins/code-simplifier"
+            },
+            "description": "Agent that simplifies and refines code for clarity, consistency, and maintainability while preserving functionality. Focuses on recently modified code."
+        },
+        {
+            "name": "codebase-cleanup",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/wshobson/agents.git",
+                "path": "plugins/codebase-cleanup"
+            },
+            "description": "Technical debt reduction, dependency updates, and code refactoring automation"
+        },
+        {
+            "name": "codex-plugin-cc",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/openai/codex-plugin-cc.git",
+                "path": "plugins/codex-plugin-cc"
+            },
+            "description": "OpenAI Codex plugin for Claude Code interoperability."
+        },
+        {
+            "name": "coderabbit",
+            "source": {
+                "source": "url",
+                "url": "https://github.com/coderabbitai/claude-plugin.git"
+            },
+            "description": "Your code review partner. CodeRabbit provides external validation using a specialized AI architecture and 40+ integrated static analyzers — offering a different perspective that catches bugs, security vulnerabilities, logic errors, and edge cases. Context-aware analysis via AST parsing and codegraph relationships. Automatically incorporates CLAUDE.md and project coding guidelines into reviews. Free to use."
+        },
+        {
+            "name": "comprehensive-review",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/wshobson/agents.git",
+                "path": "plugins/comprehensive-review"
+            },
+            "description": "Multi-perspective code analysis covering architecture, security, and best practices"
+        },
+        {
+            "name": "conductor",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/wshobson/agents.git",
+                "path": "plugins/conductor"
+            },
+            "description": "Context-Driven Development plugin that transforms Claude Code into a project management tool with structured workflow: Context → Spec & Plan → Implement"
+        },
+        {
+            "name": "discord",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/anthropics/claude-plugins-official.git",
+                "path": "external_plugins/discord"
+            },
+            "description": "Discord messaging bridge with built-in access control. Manage pairing, allowlists, and policy via /discord:access."
+        },
+        {
+            "name": "double-shot-latte",
+            "source": {
+                "source": "url",
+                "url": "https://github.com/obra/double-shot-latte.git"
+            },
+            "description": "Stop 'Would you like me to continue?' interruptions. Automatically evaluates whether Claude should continue working using Claude-judged decision making."
+        },
+        {
+            "name": "fakechat",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/anthropics/claude-plugins-official.git",
+                "path": "external_plugins/fakechat"
+            },
+            "description": "Localhost web chat for testing the channel notification flow. No tokens, no access control, no third-party service."
+        },
+        {
+            "name": "feature-dev",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/anthropics/claude-plugins-official.git",
+                "path": "plugins/feature-dev"
+            },
+            "description": "Comprehensive feature development workflow with specialized agents for codebase exploration, architecture design, and quality review"
+        },
+        {
+            "name": "frontend-design",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/anthropics/claude-plugins-official.git",
+                "path": "plugins/frontend-design"
+            },
+            "description": "Create distinctive, production-grade frontend interfaces with high design quality. Generates creative, polished code that avoids generic AI aesthetics."
+        },
+        {
+            "name": "frontend-mobile-development",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/wshobson/agents.git",
+                "path": "plugins/frontend-mobile-development"
+            },
+            "description": "Frontend UI development and mobile application implementation across platforms"
+        },
+        {
+            "name": "gopls-lsp",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/anthropics/claude-plugins-official.git",
+                "path": "plugins/gopls-lsp"
+            },
+            "description": "Go language server for code intelligence and refactoring"
+        },
+        {
+            "name": "javascript-typescript",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/wshobson/agents.git",
+                "path": "plugins/javascript-typescript"
+            },
+            "description": "JavaScript and TypeScript development with ES6+, Node.js, React, and modern web frameworks"
+        },
+        {
+            "name": "kotlin-lsp",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/anthropics/claude-plugins-official.git",
+                "path": "plugins/kotlin-lsp"
+            },
+            "description": "Kotlin language server for code intelligence"
+        },
+        {
+            "name": "lavra",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/roberto-mello/lavra.git",
+                "path": "plugins/lavra"
+            },
+            "description": "30 specialized agents, 28 commands, 15 skills, persistent memory with auto-recall"
+        },
+        {
+            "name": "llm-application-dev",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/wshobson/agents.git",
+                "path": "plugins/llm-application-dev"
+            },
+            "description": "LLM application development with LangGraph, RAG systems, vector search, and AI agent architectures"
+        },
+        {
+            "name": "mcp-server-dev",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/anthropics/claude-plugins-official.git",
+                "path": "plugins/mcp-server-dev"
+            },
+            "description": "Skills for designing and building MCP servers that work seamlessly with Claude. Guides you through deployment models (remote HTTP, MCPB, local), tool design patterns, auth, and interactive MCP apps."
+        },
+        {
+            "name": "playground",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/anthropics/claude-plugins-official.git",
+                "path": "plugins/playground"
+            },
+            "description": "Creates interactive HTML playgrounds — self-contained single-file explorers with visual controls, live preview, and prompt output with copy button."
+        },
+        {
+            "name": "plugin-dev",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/anthropics/claude-plugins-official.git",
+                "path": "plugins/plugin-dev"
+            },
+            "description": "Comprehensive toolkit for developing Claude Code plugins. Includes 7 expert skills covering hooks, MCP integration, commands, agents, and best practices."
+        },
+        {
+            "name": "pr-review-toolkit",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/anthropics/claude-plugins-official.git",
+                "path": "plugins/pr-review-toolkit"
+            },
+            "description": "Comprehensive PR review agents specializing in comments, tests, error handling, type design, code quality, and code simplification"
+        },
+        {
+            "name": "pyright-lsp",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/anthropics/claude-plugins-official.git",
+                "path": "plugins/pyright-lsp"
+            },
+            "description": "Python language server (Pyright) for type checking and code intelligence"
+        },
+        {
+            "name": "python-development",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/wshobson/agents.git",
+                "path": "plugins/python-development"
+            },
+            "description": "Modern Python development with Python 3.12+, Django, FastAPI, async patterns, and production best practices"
+        },
+        {
+            "name": "ralph-loop",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/anthropics/claude-plugins-official.git",
+                "path": "plugins/ralph-loop"
+            },
+            "description": "Interactive self-referential AI loops for iterative development, implementing the Ralph Wiggum technique. Claude works on the same task repeatedly, seeing its previous work, until completion."
+        },
+        {
+            "name": "repomix-commands",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/yamadashy/repomix.git",
+                "path": ".claude/plugins/repomix-commands"
+            },
+            "description": "Repomix slash commands for packing local and remote repositories"
+        },
+        {
+            "name": "repomix-explorer",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/yamadashy/repomix.git",
+                "path": ".claude/plugins/repomix-explorer"
+            },
+            "description": "Repomix explorer agents for analyzing local and remote codebases"
+        },
+        {
+            "name": "repomix-mcp",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/yamadashy/repomix.git",
+                "path": ".claude/plugins/repomix-mcp"
+            },
+            "description": "Repomix MCP server for AI-optimized codebase analysis"
+        },
+        {
+            "name": "rust-analyzer-lsp",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/anthropics/claude-plugins-official.git",
+                "path": "plugins/rust-analyzer-lsp"
+            },
+            "description": "Rust language server for code intelligence and analysis"
+        },
+        {
+            "name": "serena",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/anthropics/claude-plugins-official.git",
+                "path": "external_plugins/serena"
+            },
+            "description": "Semantic code analysis MCP server providing intelligent code understanding, refactoring suggestions, and codebase navigation through language server protocol integration."
+        },
+        {
+            "name": "session-report",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/anthropics/claude-plugins-official.git",
+                "path": "plugins/session-report"
+            },
+            "description": "Generate an explorable HTML report of Claude Code session usage — tokens, cache efficiency, subagents, skills, and the most expensive prompts — from local ~/.claude/projects transcripts."
+        },
+        {
+            "name": "shell-scripting",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/wshobson/agents.git",
+                "path": "plugins/shell-scripting"
+            },
+            "description": "Production-grade Bash scripting with defensive programming, POSIX compliance, and comprehensive testing"
+        },
+        {
+            "name": "skill-creator",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/anthropics/claude-plugins-official.git",
+                "path": "plugins/skill-creator"
+            },
+            "description": "Create new skills, improve existing skills, and measure skill performance. Use when users want to create a skill from scratch, update or optimize an existing skill, run evals to test a skill, or benchmark skill performance with variance analysis."
+        },
+        {
+            "name": "superpowers",
+            "source": {
+                "source": "url",
+                "url": "https://github.com/obra/superpowers.git"
+            },
+            "description": "Core skills library: TDD, debugging, collaboration patterns, and proven techniques"
+        },
+        {
+            "name": "superpowers-developing-for-claude-code",
+            "source": {
+                "source": "url",
+                "url": "https://github.com/obra/superpowers-developing-for-claude-code.git"
+            },
+            "description": "Skills and resources for developing Claude Code plugins, skills, MCP servers, and extensions. Includes comprehensive official documentation and self-update mechanism."
+        },
+        {
+            "name": "systems-programming",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/wshobson/agents.git",
+                "path": "plugins/systems-programming"
+            },
+            "description": "Systems programming with Rust, Go, C, and C++ for performance-critical and low-level development"
+        },
+        {
+            "name": "tdd-workflows",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/wshobson/agents.git",
+                "path": "plugins/tdd-workflows"
+            },
+            "description": "Test-driven development methodology with red-green-refactor cycles and code review"
+        },
+        {
+            "name": "telegram",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/anthropics/claude-plugins-official.git",
+                "path": "external_plugins/telegram"
+            },
+            "description": "Telegram messaging bridge with built-in access control. Manage pairing, allowlists, and policy via /telegram:access."
+        },
+        {
+            "name": "typescript-lsp",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/anthropics/claude-plugins-official.git",
+                "path": "plugins/typescript-lsp"
+            },
+            "description": "TypeScript/JavaScript language server for enhanced code intelligence"
+        },
+        {
+            "name": "ui-design",
+            "source": {
+                "source": "git-subdir",
+                "url": "https://github.com/wshobson/agents.git",
+                "path": "plugins/ui-design"
+            },
+            "description": "Comprehensive UI/UX design plugin for mobile (iOS, Android, React Native) and web applications with design systems, accessibility, and modern patterns"
+        },
+        {
+            "name": "zsh-tool",
+            "source": {
+                "source": "github",
+                "repo": "ArkTechNWA/zsh-tool"
+            },
+            "description": "Zsh shell for Claude Code - full terminal control, live output, PTY mode for interactive commands"
+        }
+    ]
+}

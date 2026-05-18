@@ -1,39 +1,158 @@
-# `~/.agents/` — Jacob's skill workshop
+# `~/.agents/` — Jacob's agent marketplace workshop
 
-This directory holds **handwritten Claude Code skills** that ride along on every session. They're not a published plugin — just a personal kit Claude can reach for whenever a relevant prompt comes in. Each skill is a self-contained subdirectory under `skills/`.
+This directory is Jacob's local agent-component workshop and multi-marketplace source repo. It contains the personal skill kit plus source/generated structure for Claude Code and Codex plugin bundles.
+
+Local skills live under `shared/skills/`. The previous root `skills/` directory has been migrated and is no longer a canonical source location.
+
+The existing root `plugins/` directory is legacy/scratch space unless explicitly repurposed later. It is not part of the new marketplace bucket layout.
 
 ## Layout
 
 ```
 ~/.agents/
-├── CLAUDE.md           ← you are here
-├── skills/             ← all skills live here, one dir per skill
-│   ├── <name>/
-│   │   ├── SKILL.md    ← required: frontmatter + body
-│   │   ├── README.md   ← human-facing overview (no frontmatter)
-│   │   ├── CHANGELOG.md ← Keep-a-Changelog style
-│   │   ├── scripts/    ← any helper scripts (bash, ps1, etc.)
-│   │   └── references/ ← long reference docs loaded on-demand
-│   └── ...
-├── plugins/            ← scratch space for plugin experiments
-└── docs/
-    └── sessions/       ← save-to-md output lives here
+├── CLAUDE.md              ← you are here
+├── curated-marketplace/  ← untouched upstream plugins, sourced directly from their original repos
+│   ├── .claude-plugin/   ← Claude marketplace root
+│   └── .agents/plugins/  ← Codex marketplace root
+│   (no plugins/ dir — curated plugins are never stored locally)
+├── flow-marketplace/     ← plugins/skills for self-hosted and upstream services
+│   ├── .claude-plugin/
+│   ├── .agents/plugins/
+│   └── plugins/
+├── vibe-marketplace/     ← original local projects with no upstream dependency
+│   ├── .claude-plugin/
+│   ├── .agents/plugins/
+│   └── plugins/
+├── shared/               ← canonical reusable component sources
+│   └── skills/           ← local skill inventory, one dir per skill
+├── catalog/              ← plugin package metadata and generation instructions
+│   └── plugins/          ← one YAML per plugin, includes fork tracking metadata
+├── templates/            ← reusable plugin skeletons
+├── generated/            ← generated platform output
+├── scripts/              ← repo maintenance/generation scripts
+│   ├── fork-diff.sh      ← diff a forked plugin against its upstream
+│   └── fork-list.sh      ← list all plugins with fork metadata in catalog
+└── docs/sessions/        ← save-to-md output lives here
 ```
 
 **Every skill MUST have:** `SKILL.md`, `README.md`, `CHANGELOG.md`. Scripts and references are optional.
 
+## Marketplace architecture
+
+This repo uses three real marketplace buckets because they represent different trust/provenance boundaries:
+
+- `curated-marketplace/`: **purely untouched upstream plugins**. Every entry points to an external repo; no local plugin payloads exist here. There is no `plugins/` directory.
+- `flow-marketplace/`: service-specific operating packs for self-hosted and upstream services. Local plugin payloads live under `plugins/`.
+- `vibe-marketplace/`: original projects and workflows with no upstream dependency. Local plugin payloads live under `plugins/`.
+
+Each bucket is a marketplace root for Claude and Codex:
+
+- Claude Code marketplace file: `<bucket>/.claude-plugin/marketplace.json`
+- Codex marketplace file: `<bucket>/.agents/plugins/marketplace.json`
+- Bucket-local plugin payloads (flow and vibe only): `<bucket>/plugins/<plugin-name>/`
+
+Relative plugin sources resolve inside the bucket as `./plugins/<plugin-name>`. Avoid layouts that require marketplace files to reference files outside their bucket root.
+
+### Forked plugins
+
+A forked plugin is one that started as an upstream plugin but has local modifications. Forks are **not** a separate marketplace bucket — they live in whichever bucket matches their intent (a patched homelab service plugin → `flow-marketplace/`, an extended vibe project → `vibe-marketplace/`). The fork relationship is tracked in `catalog/plugins/<name>.yaml`.
+
+**Catalog YAML schema for forks:**
+
+```yaml
+name: my-forked-plugin
+bucket: flow-marketplace          # which bucket holds the local payload
+upstream:
+  source: git-subdir              # original source type (git-subdir | url | github)
+  url: https://github.com/org/repo.git
+  path: plugins/plugin-name       # omit if the whole repo is the plugin
+  sha: abc123def456               # upstream commit SHA at time of fork
+fork:
+  forked_on: "2026-05-18"
+  reason: "Added homelab proxy headers, disabled telemetry"
+```
+
+**Invariants:**
+- A plugin in `curated-marketplace` MUST NOT have a `fork:` key — curated means untouched upstream. Move it to the appropriate bucket before adding local modifications.
+- `upstream.sha` is the pinned commit at fork time. Update it when you intentionally rebase onto a newer upstream.
+
+**Scripts:**
+
+```bash
+# Show diff between local payload and upstream at tracked SHA
+scripts/fork-diff.sh <plugin-name>
+
+# List all plugins with fork metadata
+scripts/fork-list.sh
+```
+
+## Component placement
+
+Use shared source directories for canonical component intent and per-platform directories for emitted package formats.
+
+`shared/` contains the reusable content itself: skill directories, prompts, hook scripts, MCP fragments, command bodies, themes, and other files humans edit as the capability source.
+
+`catalog/` contains package metadata about that content: plugin membership, target platforms, marketplace bucket, provenance, generation rules, publishability, source-to-output mappings, and fork tracking (upstream URL, pinned SHA, reason for divergence). Do not duplicate the full capability body in catalog files.
+
+Rule of thumb:
+
+- Edit the capability itself in `shared/`.
+- Edit plugin inventory, ownership, targets, provenance, package membership, or generator behavior in `catalog/plugins/<plugin-id>.yaml`.
+
+| Component | Shared/source location | Per-plugin/platform location |
+|---|---|---|
+| Agents | `shared/agents/`, `shared/prompts/` | `plugins/<name>/agents/{claude,codex}/` |
+| Commands | `shared/commands/` | `plugins/<name>/commands/claude/` |
+| Hooks | `shared/hooks/`, `shared/hook-scripts/` | `plugins/<name>/hooks/{claude,codex}/` |
+| Skills | `shared/skills/` | `plugins/<name>/skills/` |
+| Output styles | `shared/output-styles/` | `plugins/<name>/output-styles/` |
+| Channels | `shared/channels/` | `plugins/<name>/channels/` |
+| Monitors | `shared/monitors/` | `plugins/<name>/monitors/` |
+| Themes | `shared/themes/` | `plugins/<name>/themes/` |
+| MCP servers | `shared/mcp/` | `plugins/<name>/mcp/` |
+| LSP servers | `shared/lsp/` | `plugins/<name>/lsp/` |
+| `bin/` tools | `shared/bin/` for reusable tools | `plugins/<name>/bin/` |
+| Plugin settings | `shared/settings/` | `plugins/<name>/settings/` or plugin root `settings.json` |
+
+Agents are intentionally platform-specific at packaging time. Claude agents are Markdown/frontmatter, and Codex agents are standalone TOML and may need separate installation. Keep the common prompt/intent in `shared/agents/`, then use `catalog/plugins/<plugin-id>.yaml` to decide which plugin includes it and which platform outputs are generated.
+
+Codex plugin support is not identical to Claude plugin support. In particular, do not assume Codex can distribute every component Claude can. Keep Codex-only installation steps explicit when a component must be written into user or project config outside the plugin payload.
+
+## Plugin skeletons
+
+The full plugin skeleton lives in `templates/plugin/` and is mirrored as `_template/` under each marketplace bucket. It includes:
+
+```
+.claude-plugin/
+.codex-plugin/
+agents/{claude,codex}/
+commands/claude/
+hooks/{claude,codex}/
+skills/
+output-styles/
+channels/
+monitors/
+themes/
+mcp/
+lsp/
+bin/
+settings/
+```
+
+Use `_template/` as a shape reference only. Do not put real plugin content there unless the intent is to change the template for future plugins.
+
 ## Skill discovery — the symlink farm
 
-Claude Code discovers skills from `~/.claude/skills/<name>/SKILL.md`. The skills in *this* repo live at `~/.agents/skills/<name>/`, and are exposed to Claude via **symlinks** in `~/.claude/skills/`:
+Claude Code discovers skills from `~/.claude/skills/<name>/SKILL.md`. The skills in *this* repo live at `~/.agents/shared/skills/<name>/`, and are exposed to Claude via **symlinks** in `~/.claude/skills/`:
 
 ```bash
 ls -la ~/.claude/skills/ | grep agents
-# lrwxrwxrwx ... screenshots -> /home/jmagar/.agents/skills/screenshots
-# lrwxrwxrwx ... chrome      -> /home/jmagar/.agents/skills/chrome
+# lrwxrwxrwx ... screenshots -> /home/jmagar/.agents/shared/skills/screenshots
+# lrwxrwxrwx ... chrome      -> /home/jmagar/.agents/shared/skills/chrome
 # ...
 ```
 
-**Implication:** writing a SKILL.md under `~/.agents/skills/` does NOT make it discoverable. You must also create the symlink. See the recipe below.
+**Implication:** writing a SKILL.md under `~/.agents/shared/skills/` does NOT make it discoverable. You must also create the symlink. See the recipe below.
 
 **Sanity-check for broken symlinks** (run after any rename or skill removal):
 
@@ -86,13 +205,13 @@ For the full host inventory (six devices, IPs, what runs where, MCP server map, 
 
 ## Adding a new skill
 
-1. `mkdir -p skills/<name>/{scripts,references}` (drop the subdirs you don't need)
-2. Write `skills/<name>/SKILL.md` with frontmatter (`name:` matching dir, `description:` with triggers)
-3. Write `skills/<name>/README.md` (no frontmatter — overview, when-to-invoke, files, companion skills)
-4. Write `skills/<name>/CHANGELOG.md` (seed with today's date and an "Added — initial release" entry)
+1. `mkdir -p shared/skills/<name>/{scripts,references}` (drop the subdirs you don't need)
+2. Write `shared/skills/<name>/SKILL.md` with frontmatter (`name:` matching dir, `description:` with triggers)
+3. Write `shared/skills/<name>/README.md` (no frontmatter — overview, when-to-invoke, files, companion skills)
+4. Write `shared/skills/<name>/CHANGELOG.md` (seed with today's date and an "Added — initial release" entry)
 5. Validate with `validate-skill` (or `vibin:validate-skill`) — checks frontmatter, trigger phrases, structure
 6. Run `plugin-dev:skill-reviewer` for deeper convention review before publishing
-7. **Wire it up:** `ln -sf ~/.agents/skills/<name> ~/.claude/skills/<name>`
+7. **Wire it up:** `ln -sf ~/.agents/shared/skills/<name> ~/.claude/skills/<name>`
 8. Open a fresh session — new skills appear at session start, not mid-session
 
 ## Renaming or removing a skill
@@ -101,13 +220,13 @@ The symlink farm doesn't auto-clean. After any rename, the old symlink dangles a
 
 ```bash
 # rename
-mv ~/.agents/skills/<old> ~/.agents/skills/<new>
-sed -i "s/^name: <old>$/name: <new>/" ~/.agents/skills/<new>/SKILL.md
+mv ~/.agents/shared/skills/<old> ~/.agents/shared/skills/<new>
+sed -i "s/^name: <old>$/name: <new>/" ~/.agents/shared/skills/<new>/SKILL.md
 rm ~/.claude/skills/<old>
-ln -sf ~/.agents/skills/<new> ~/.claude/skills/<new>
+ln -sf ~/.agents/shared/skills/<new> ~/.claude/skills/<new>
 
 # remove
-rm -rf ~/.agents/skills/<name>
+rm -rf ~/.agents/shared/skills/<name>
 rm ~/.claude/skills/<name>
 ```
 
