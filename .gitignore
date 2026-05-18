@@ -5,6 +5,6 @@
 .beads-credential-key
 .beads/
 .lavra/
-
+.env
 # MCP server credentials
-shared/mcp/.env
+src/mcp/.env
