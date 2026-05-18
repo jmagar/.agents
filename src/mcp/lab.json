@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "lab": {
+      "type": "http",
+      "url": "https://lab.tootie.tv/mcp"
+    }
+  }
+}

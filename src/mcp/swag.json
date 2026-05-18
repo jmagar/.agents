@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "swag": {
+      "type": "http",
+      "url": "https://swag.tootie.tv/mcp"
+    }
+  }
+}

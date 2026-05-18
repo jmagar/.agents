@@ -1,0 +1,197 @@
+{
+  "contract": "catalog-files",
+  "contract_schema": "catalog-files-contract/0.1",
+  "version": "0.1.0",
+  "status": "draft",
+  "repo_root": ".",
+  "catalog_root": "catalog",
+  "related_contracts": [
+    "docs/contracts/claude-codex-marketplace-repo-structure.contract.json"
+  ],
+  "purpose": "Define the required fields, source reference rules, and generation semantics for plugin package catalog files.",
+  "file_format": "yaml",
+  "file_format_notes": "Catalog files are authored in YAML with the .yaml extension. The contract document itself remains JSON; it describes catalog file shape, it is not a catalog file.",
+  "common_required_fields": [
+    "id",
+    "kind",
+    "version",
+    "status",
+    "owner",
+    "description",
+    "source_refs",
+    "targets",
+    "provenance"
+  ],
+  "common_field_contract": {
+    "id": {
+      "type": "string",
+      "format": "kebab-case",
+      "must_match_filename_stem": true
+    },
+    "kind": {
+      "type": "enum",
+      "values": [
+        "plugin"
+      ]
+    },
+    "version": {
+      "type": "string",
+      "format": "semver"
+    },
+    "status": {
+      "type": "enum",
+      "values": [
+        "draft",
+        "active",
+        "deprecated",
+        "retired"
+      ]
+    },
+    "owner": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string",
+      "min_length": 1
+    },
+    "source_refs": {
+      "type": "array",
+      "items": "relative path",
+      "must_exist": true,
+      "forbidden_prefixes": [
+        "generated/"
+      ],
+      "preferred_prefixes": [
+        "shared/"
+      ]
+    },
+    "targets": {
+      "type": "array",
+      "items": "platform id",
+      "values": [
+        "claude",
+        "codex"
+      ]
+    },
+    "provenance": {
+      "type": "object",
+      "required": [
+        "origin"
+      ],
+      "origin_values": [
+        "local",
+        "upstream",
+        "curated",
+        "generated",
+        "unknown"
+      ]
+    }
+  },
+  "file_families": {
+    "plugins": {
+      "path_glob": "catalog/plugins/*.yaml",
+      "kind": "plugin",
+      "required_fields": [
+        "bucket",
+        "plugin_root",
+        "marketplaces",
+        "components",
+        "generation"
+      ],
+      "bucket_values": [
+        "curated-marketplace",
+        "flow-marketplace",
+        "vibe-marketplace"
+      ],
+      "plugin_root_rule": "Path must stay inside the declared bucket, normally <bucket>/plugins/<id>.",
+      "component_keys": [
+        "agents",
+        "commands",
+        "hooks",
+        "skills",
+        "output-styles",
+        "channels",
+        "monitors",
+        "themes",
+        "mcp",
+        "lsp",
+        "bin",
+        "settings"
+      ],
+      "component_value_rule": "Component values are shared/ source paths, not IDs that require separate component catalog files.",
+      "component_source_prefixes": [
+        "shared/agents/",
+        "shared/bin/",
+        "shared/channels/",
+        "shared/commands/",
+        "shared/hook-scripts/",
+        "shared/hooks/",
+        "shared/lsp/",
+        "shared/mcp/",
+        "shared/monitors/",
+        "shared/output-styles/",
+        "shared/settings/",
+        "shared/skills/",
+        "shared/themes/"
+      ]
+    }
+  },
+  "forbidden_catalog_roots_without_new_contract": [
+    "catalog/agents",
+    "catalog/commands",
+    "catalog/hooks",
+    "catalog/lsp",
+    "catalog/mcp",
+    "catalog/themes"
+  ],
+  "generation_contract": {
+    "strict": {
+      "type": "boolean",
+      "default": true,
+      "true_means": [
+        "Generated output must contain only catalog-declared components.",
+        "Every source_ref must exist.",
+        "Every generated file must map back to a declared source_ref, template, or output mapping.",
+        "Undeclared components are validation errors."
+      ],
+      "false_means": [
+        "Generated output may include extra platform scaffolding or compatibility files.",
+        "Extra files must be listed in generation.allowed_extra_outputs or be clearly marked generated.",
+        "Missing source_refs are still validation errors."
+      ]
+    },
+    "copy_shared_sources": {
+      "type": "boolean",
+      "default": true
+    },
+    "allow_inline_content": {
+      "type": "boolean",
+      "default": false,
+      "rules": [
+        "Do not inline SKILL.md bodies.",
+        "Do not inline long prompts.",
+        "Do not inline hook scripts.",
+        "Inline content must be deterministic and validation-covered."
+      ]
+    },
+    "allowed_extra_outputs": {
+      "type": "array",
+      "items": "relative path glob",
+      "required_when_strict_false": false
+    }
+  },
+  "platform_component_support_source": "docs/contracts/claude-codex-marketplace-repo-structure.contract.json#/platform_component_support",
+  "validation_rules": [
+    "Every catalog file must have all common_required_fields.",
+    "The filename stem must match id.",
+    "The containing catalog directory must be catalog/plugins.",
+    "source_refs must exist and must not point under generated/.",
+    "catalog/plugins entries must use a known marketplace bucket.",
+    "catalog/plugins plugin_root must stay inside the declared bucket.",
+    "Component values referenced from catalog/plugins must be shared/ source paths.",
+    "Catalog plugin files must use the .yaml extension and parse as valid YAML.",
+    "Component catalog roots such as catalog/agents or catalog/mcp are invalid unless a future contract explicitly adds them.",
+    "Target platform mappings must be valid according to the Claude/Codex platform_component_support matrix.",
+    "Strict generation must reject undeclared generated components and files."
+  ]
+}

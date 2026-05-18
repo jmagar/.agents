@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "fastproxy": {
+      "type": "http",
+      "url": "http://localhost:8000/mcp",
+      "description": "FastProxy unified MCP gateway"
+    }
+  }
+}

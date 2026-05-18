@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+
+# Guard: only trust CLAUDE_PLUGIN_DATA if it resolves to an absolute path.
+# The plugin system occasionally passes the literal unexpanded string
+# "${CLAUDE_PLUGIN_DATA}" as the env-var value, which would cause mkdir to
+# create a directory with that literal name inside the repo.
+_cpd="${CLAUDE_PLUGIN_DATA:-}"
+if [[ "${_cpd:0:1}" == "/" ]]; then
+  DATA_ROOT="${_cpd}"
+else
+  DATA_ROOT="${REPO_ROOT}"
+fi
+unset _cpd
+
+VENV_DIR="${DATA_ROOT}/.venv"
+
+if [[ ! -f "${REPO_ROOT}/uv.lock" ]]; then
+  echo "sync-uv: missing lockfile at ${REPO_ROOT}/uv.lock" >&2
+  exit 1
+fi
+
+mkdir -p "${DATA_ROOT}"
+UV_PROJECT_ENVIRONMENT="${VENV_DIR}" uv sync --project "${REPO_ROOT}"

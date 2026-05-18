@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "windows-mcp_agent-os": {
+      "type": "http",
+      "url": "https://agent-os.manatee-triceratops.ts.net/mcp/",
+      "headers": {
+        "Authorization": "Bearer ${LAB_GW_WINDOWS_MCP_AUTH_HEADER}"
+      }
+    }
+  }
+}

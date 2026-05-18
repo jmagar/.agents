@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "claude-in-mobile": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "claude-in-mobile"
+      ],
+      "env": {
+        "ANDROID_HOME": "${ANDROID_HOME}",
+        "PATH": "${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/emulator:${PATH}"
+      }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "description": "fastproxy project hooks",
+  "hooks": {
+    "FileChanged": [
+      {
+        "matcher": "proxy.json",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/bin/validate-config.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "axon": {
+      "type": "http",
+      "url": "https://axon.tootie.tv/mcp"
+    }
+  }
+}

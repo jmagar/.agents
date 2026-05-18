@@ -1,0 +1,220 @@
+#!/usr/bin/env bash
+# Pre-flight check for the overseerr-mcp media stack.
+# Verifies all credentials are set, tests connectivity and auth for each service,
+# and checks container status if appdata_path is configured.
+#
+# Usage: preflight [--quiet]
+#   --quiet  Only print failures (useful for hook/CI contexts)
+
+set -euo pipefail
+
+QUIET=false
+[[ "${1:-}" == "--quiet" ]] && QUIET=true
+
+# --- Colour helpers ---
+if [[ -t 1 ]]; then
+    GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[0;33m'; RESET='\033[0m'; BOLD='\033[1m'
+else
+    GREEN=''; RED=''; YELLOW=''; RESET=''; BOLD=''
+fi
+
+PASS="${GREEN}✓${RESET}"
+FAIL="${RED}✗${RESET}"
+WARN="${YELLOW}?${RESET}"
+
+FAILURES=0
+
+ok()   { $QUIET || printf "  ${PASS} %s\n" "$*"; }
+fail() { printf "  ${FAIL} %s\n" "$*"; (( FAILURES++ )) || true; }
+warn() { $QUIET || printf "  ${WARN} %s\n" "$*"; }
+header() { $QUIET || printf "\n${BOLD}%s${RESET}\n" "$*"; }
+
+# --- Load credentials ---
+# shellcheck source=/dev/null
+source load-env 2>/dev/null || {
+    echo "ERROR: load-env not in PATH. Is the plugin enabled?" >&2
+    exit 1
+}
+load_env_file 2>/dev/null || {
+    echo "ERROR: .env not found. Run the config-media-stack skill first." >&2
+    exit 1
+}
+
+# --- HTTP health check helper ---
+# check_http LABEL URL AUTH_HEADER VERSION_JQ_PATH
+# Returns the version string on success, error message on failure.
+check_http() {
+    local label="$1" url="$2" auth_header="$3" version_path="$4"
+    local response http_code body
+
+    response=$(curl -s -w "\n%{http_code}" --max-time 5 \
+        -H "$auth_header" \
+        -H "Accept: application/json" \
+        "$url" 2>/dev/null) || { fail "$label  — unreachable ($url)"; return; }
+
+    http_code=$(tail -n1 <<< "$response")
+    body=$(sed '$d' <<< "$response")
+
+    if [[ "$http_code" == "200" ]]; then
+        local version
+        version=$(echo "$body" | python3 -c "import sys,json; d=json.load(sys.stdin); print($version_path)" 2>/dev/null || echo "")
+        ok "$label  ${url}${version:+  v${version}}"
+    elif [[ "$http_code" == "401" || "$http_code" == "403" ]]; then
+        fail "$label  — auth failed (HTTP $http_code) — check API key"
+    else
+        fail "$label  — HTTP $http_code ($url)"
+    fi
+}
+
+# ── Environment variables ──────────────────────────────────────────────────────
+header "Environment"
+
+check_var() {
+    local var="$1"
+    if [[ -n "${!var:-}" ]]; then
+        ok "$var"
+    else
+        fail "$var  (not set)"
+    fi
+}
+
+check_var PLEX_URL;          check_var PLEX_TOKEN
+check_var OVERSEERR_URL;     check_var OVERSEERR_API_KEY
+check_var RADARR_URL;        check_var RADARR_API_KEY
+check_var SONARR_URL;        check_var SONARR_API_KEY
+check_var PROWLARR_URL;      check_var PROWLARR_API_KEY
+check_var TAUTULLI_URL;      check_var TAUTULLI_API_KEY
+check_var SABNZBD_URL;       check_var SABNZBD_API_KEY
+check_var QBITTORRENT_URL;   check_var QBITTORRENT_USERNAME;  check_var QBITTORRENT_PASSWORD
+
+# ── Connectivity & auth ────────────────────────────────────────────────────────
+header "Connectivity"
+
+# Plex
+if [[ -n "${PLEX_URL:-}" && -n "${PLEX_TOKEN:-}" ]]; then
+    check_http "Plex       " \
+        "${PLEX_URL%/}/identity?X-Plex-Token=${PLEX_TOKEN}" \
+        "Accept: application/json" \
+        "d.get('MediaContainer',{}).get('version','')"
+else
+    warn "Plex        — skipped (missing vars)"
+fi
+
+# Overseerr
+if [[ -n "${OVERSEERR_URL:-}" && -n "${OVERSEERR_API_KEY:-}" ]]; then
+    check_http "Overseerr  " \
+        "${OVERSEERR_URL%/}/api/v1/settings/about" \
+        "X-Api-Key: ${OVERSEERR_API_KEY}" \
+        "d.get('version','')"
+else
+    warn "Overseerr   — skipped (missing vars)"
+fi
+
+# Radarr
+if [[ -n "${RADARR_URL:-}" && -n "${RADARR_API_KEY:-}" ]]; then
+    check_http "Radarr     " \
+        "${RADARR_URL%/}/api/v3/system/status" \
+        "X-Api-Key: ${RADARR_API_KEY}" \
+        "d.get('version','')"
+else
+    warn "Radarr      — skipped (missing vars)"
+fi
+
+# Sonarr
+if [[ -n "${SONARR_URL:-}" && -n "${SONARR_API_KEY:-}" ]]; then
+    check_http "Sonarr     " \
+        "${SONARR_URL%/}/api/v3/system/status" \
+        "X-Api-Key: ${SONARR_API_KEY}" \
+        "d.get('version','')"
+else
+    warn "Sonarr      — skipped (missing vars)"
+fi
+
+# Prowlarr
+if [[ -n "${PROWLARR_URL:-}" && -n "${PROWLARR_API_KEY:-}" ]]; then
+    check_http "Prowlarr   " \
+        "${PROWLARR_URL%/}/api/v1/system/status" \
+        "X-Api-Key: ${PROWLARR_API_KEY}" \
+        "d.get('version','')"
+else
+    warn "Prowlarr    — skipped (missing vars)"
+fi
+
+# Tautulli
+if [[ -n "${TAUTULLI_URL:-}" && -n "${TAUTULLI_API_KEY:-}" ]]; then
+    check_http "Tautulli   " \
+        "${TAUTULLI_URL%/}/api/v2?apikey=${TAUTULLI_API_KEY}&cmd=get_server_info&output=json" \
+        "Accept: application/json" \
+        "d.get('response',{}).get('data',{}).get('pms_version','')"
+else
+    warn "Tautulli    — skipped (missing vars)"
+fi
+
+# SABnzbd
+if [[ -n "${SABNZBD_URL:-}" && -n "${SABNZBD_API_KEY:-}" ]]; then
+    check_http "SABnzbd    " \
+        "${SABNZBD_URL%/}/api?mode=version&apikey=${SABNZBD_API_KEY}&output=json" \
+        "Accept: application/json" \
+        "d.get('version','')"
+else
+    warn "SABnzbd     — skipped (missing vars)"
+fi
+
+# qBittorrent — session cookie auth, different pattern
+if [[ -n "${QBITTORRENT_URL:-}" && -n "${QBITTORRENT_USERNAME:-}" && -n "${QBITTORRENT_PASSWORD:-}" ]]; then
+    login_response=$(curl -s -c /tmp/qbit_preflight_$$.txt --max-time 5 \
+        -d "username=${QBITTORRENT_USERNAME}&password=${QBITTORRENT_PASSWORD}" \
+        "${QBITTORRENT_URL%/}/api/v2/auth/login" 2>/dev/null || echo "ERROR")
+    rm -f /tmp/qbit_preflight_$$.txt
+    if [[ "$login_response" == "Ok." ]]; then
+        ok "qBittorrent ${QBITTORRENT_URL}"
+    elif [[ "$login_response" == "Fails." ]]; then
+        fail "qBittorrent — auth failed — check username/password"
+    else
+        fail "qBittorrent — unreachable (${QBITTORRENT_URL})"
+    fi
+else
+    warn "qBittorrent — skipped (missing vars)"
+fi
+
+# ── Container status (if appdata_path configured) ─────────────────────────────
+APPDATA_RAW="${CLAUDE_PLUGIN_OPTION_APPDATA_PATH:-}"
+
+if [[ -n "$APPDATA_RAW" ]]; then
+    header "Containers"
+
+    # Common container name patterns for each service
+    CONTAINERS=(plex overseerr radarr sonarr prowlarr tautulli sabnzbd qbittorrent)
+
+    if [[ "$APPDATA_RAW" == *:* ]]; then
+        HOST="${APPDATA_RAW%%:*}"
+        docker_cmd="ssh $HOST docker ps --format '{{.Names}}'"
+    else
+        docker_cmd="docker ps --format '{{.Names}}'"
+    fi
+
+    running=$(eval "$docker_cmd" 2>/dev/null || echo "")
+
+    if [[ -z "$running" ]]; then
+        warn "Could not reach Docker${HOST:+ on $HOST} — is Docker running?"
+    else
+        for container in "${CONTAINERS[@]}"; do
+            # Match if any running container name contains the service name
+            if echo "$running" | grep -qi "$container"; then
+                match=$(echo "$running" | grep -i "$container" | head -1)
+                ok "$container  ($match)"
+            else
+                warn "$container  — no running container found"
+            fi
+        done
+    fi
+fi
+
+# ── Summary ────────────────────────────────────────────────────────────────────
+printf "\n"
+if [[ $FAILURES -eq 0 ]]; then
+    printf "${GREEN}${BOLD}All checks passed.${RESET}\n"
+else
+    printf "${RED}${BOLD}%d check(s) failed.${RESET}\n" "$FAILURES"
+    exit 1
+fi

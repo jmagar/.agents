@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "sequential-thinking": {
+      "command": "npx",
+      "args": [
+        "mcp-sequentialthinking-tools"
+      ]
+    }
+  }
+}

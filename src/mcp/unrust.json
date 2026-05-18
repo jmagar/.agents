@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "unrust": {
+      "type": "http",
+      "url": "https://unraid.tootie.tv/mcp",
+      "headers": {
+        "Authorization": "Bearer ${LAB_GW_UNRUST_AUTH_HEADER}"
+      }
+    }
+  }
+}

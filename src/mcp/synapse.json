@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "synapse": {
+      "command": "node",
+      "args": [
+        "/home/jmagar/workspace/synapse-mcp/dist/index.js"
+      ]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "windows-mcp_steamy": {
+      "type": "http",
+      "url": "http://100.119.83.39:8000/mcp",
+      "headers": {
+        "Authorization": "Bearer ${WINDOWS_MCP_STEAMY_TOKEN}"
+      }
+    }
+  }
+}

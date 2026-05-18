@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "neo4j-memory": {
+      "command": "uvx",
+      "args": [
+        "mcp-neo4j-memory"
+      ]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "bitwarden": {
+      "command": "env",
+      "args": [
+        "PATH=/home/jmagar/.local/share/fnm/node-versions/v24.13.0/installation/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "/home/jmagar/.codex/plugins/cache/labby-marketplace/bitwarden/local/bin/bitwarden-mcp"
+      ]
+    }
+  }
+}

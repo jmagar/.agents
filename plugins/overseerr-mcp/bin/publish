@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# publish — bump version, commit, tag, and push to trigger PyPI + Docker publish.
+#
+# Usage:
+#   bin/publish [major|minor|patch]   (default: patch)
+
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+BUMP="${1:-patch}"
+
+[ "$(git -C "$REPO_ROOT" branch --show-current)" = "main" ] \
+    || { echo "error: switch to main first"; exit 1; }
+[ -z "$(git -C "$REPO_ROOT" status --porcelain)" ] \
+    || { echo "error: commit or stash changes first"; exit 1; }
+
+git -C "$REPO_ROOT" pull origin main
+
+"$REPO_ROOT/bin/bump-version" "$BUMP"
+
+NEW=$(grep -m1 '"version"' "$REPO_ROOT/.claude-plugin/plugin.json" \
+    | sed 's/.*"version": "\(.*\)".*/\1/')
+
+git -C "$REPO_ROOT" add -A
+git -C "$REPO_ROOT" commit -m "release: v${NEW}"
+git -C "$REPO_ROOT" tag "v${NEW}"
+git -C "$REPO_ROOT" push origin main --tags
+
+echo "Tagged v${NEW} — publish workflow will run automatically"

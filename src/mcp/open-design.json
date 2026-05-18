@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "open-design": {
+      "command": "env",
+      "args": [
+        "OD_DATA_DIR=/home/jmagar/workspace/open-design/.od",
+        "/usr/bin/node",
+        "/home/jmagar/workspace/open-design/apps/daemon/dist/cli.js",
+        "mcp"
+      ]
+    }
+  }
+}

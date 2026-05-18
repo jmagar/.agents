@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "arcane-mcp": {
+      "command": "node",
+      "args": [
+        "./dist/index.js"
+      ],
+      "cwd": "./",
+      "env": {
+        "ARCANE_MCP_TRANSPORT": "stdio"
+      }
+    }
+  }
+}

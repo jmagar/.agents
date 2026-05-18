@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "rmcp-template": {
+      "type": "http",
+      "url": "https://rmcp.tootie.tv/mcp",
+      "headers": {
+        "Authorization": "Bearer ${LAB_GW_RMCP_TEMPLATE_AUTH_HEADER}"
+      }
+    }
+  }
+}

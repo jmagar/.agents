@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "fastproxy-channel": {
+      "command": "fastproxy",
+      "args": [
+        "channel",
+        "--config",
+        "proxy.json"
+      ],
+      "description": "FastProxy admin channel server (optional \u2014 Claude Code Channels integration)"
+    }
+  }
+}

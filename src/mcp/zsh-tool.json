@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "zsh-tool": {
+      "command": "uvx",
+      "args": [
+        "zsh-tool-mcp"
+      ]
+    }
+  }
+}

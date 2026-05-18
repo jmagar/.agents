@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "agentmemory": {
+      "command": "node",
+      "args": [
+        "/home/jmagar/workspace/agentmemory/dist/standalone.mjs"
+      ],
+      "env": {
+        "AGENTMEMORY_URL": "${AGENTMEMORY_URL}",
+        "AGENTMEMORY_SECRET": "${AGENTMEMORY_SECRET}"
+      }
+    }
+  }
+}

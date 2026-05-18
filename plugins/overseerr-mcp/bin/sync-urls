@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# ConfigChange hook: sync userConfig values into the plugin .env.
+# - Writes URL values from CLAUDE_PLUGIN_OPTION_* into .env
+# - If appdata_path is set, auto-extracts API keys from service config files
+set -euo pipefail
+
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+
+ENV_FILE="${HOME}/.config/overseerr-mcp/.env"
+
+[[ ! -f "$ENV_FILE" ]] && exit 0  # .env not set up yet — wizard hasn't run
+
+set_if_present() {
+    local key="$1" value="$2"
+    [[ -z "$value" ]] && return
+    if grep -q "^${key}=" "$ENV_FILE" 2>/dev/null; then
+        sed -i "s|^${key}=.*|${key}=${value}|" "$ENV_FILE"
+    else
+        echo "${key}=${value}" >> "$ENV_FILE"
+    fi
+}
+
+# --- Sync URLs ---
+set_if_present "OVERSEERR_URL"   "${CLAUDE_PLUGIN_OPTION_OVERSEERR_URL:-}"
+set_if_present "PLEX_URL"        "${CLAUDE_PLUGIN_OPTION_PLEX_URL:-}"
+set_if_present "RADARR_URL"      "${CLAUDE_PLUGIN_OPTION_RADARR_URL:-}"
+set_if_present "SONARR_URL"      "${CLAUDE_PLUGIN_OPTION_SONARR_URL:-}"
+set_if_present "PROWLARR_URL"    "${CLAUDE_PLUGIN_OPTION_PROWLARR_URL:-}"
+set_if_present "TAUTULLI_URL"    "${CLAUDE_PLUGIN_OPTION_TAUTULLI_URL:-}"
+set_if_present "SABNZBD_URL"     "${CLAUDE_PLUGIN_OPTION_SABNZBD_URL:-}"
+set_if_present "QBITTORRENT_URL" "${CLAUDE_PLUGIN_OPTION_QBITTORRENT_URL:-}"
+
+# --- Extract API keys from appdata (if configured) ---
+APPDATA_RAW="${CLAUDE_PLUGIN_OPTION_APPDATA_PATH:-}"
+
+if [[ -n "$APPDATA_RAW" ]]; then
+    if [[ "$APPDATA_RAW" == *:* ]]; then
+        HOST="${APPDATA_RAW%%:*}"
+        APPDATA="${APPDATA_RAW#*:}"
+        bash "$PLUGIN_ROOT/skills/config-media-stack/scripts/extract-keys" \
+            --host "$HOST" \
+            --appdata "$APPDATA" \
+            --env-file "$ENV_FILE"
+    else
+        bash "$PLUGIN_ROOT/skills/config-media-stack/scripts/extract-keys" \
+            --appdata "$APPDATA_RAW" \
+            --env-file "$ENV_FILE"
+    fi
+fi
+
+chmod 600 "$ENV_FILE"

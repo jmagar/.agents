@@ -1,0 +1,217 @@
+{
+  "contract": "claude-codex-marketplace-repo-structure",
+  "contract_schema": "claude-codex-marketplace-repo-structure-contract/0.1",
+  "version": "0.1.0",
+  "status": "draft",
+  "repo_root": ".",
+  "platforms": [
+    "claude",
+    "codex"
+  ],
+  "validation_phases": {
+    "draft": {
+      "marketplace_files_required": false,
+      "description": "Scaffold validation. Reserved directories must exist, but marketplace catalog files may be absent."
+    },
+    "published": {
+      "marketplace_files_required": true,
+      "description": "Publishable validation. Marketplace catalog files must exist and reference plugin payloads inside the same bucket."
+    }
+  },
+  "marketplace_buckets": [
+    {
+      "name": "curated-marketplace",
+      "purpose": "Favored third-party plugins, wrappers, mirrors, or compatibility packs.",
+      "required_directories": [
+        ".claude-plugin",
+        ".agents/plugins",
+        "plugins"
+      ],
+      "marketplace_files": {
+        "claude": ".claude-plugin/marketplace.json",
+        "codex": ".agents/plugins/marketplace.json"
+      },
+      "marketplace_files_required_phase": "published"
+    },
+    {
+      "name": "flow-marketplace",
+      "purpose": "Operating packs for upstream and self-hosted services.",
+      "required_directories": [
+        ".claude-plugin",
+        ".agents/plugins",
+        "plugins"
+      ],
+      "marketplace_files": {
+        "claude": ".claude-plugin/marketplace.json",
+        "codex": ".agents/plugins/marketplace.json"
+      },
+      "marketplace_files_required_phase": "published"
+    },
+    {
+      "name": "vibe-marketplace",
+      "purpose": "Original local projects and workflows that do not rely on upstream plugin ownership.",
+      "required_directories": [
+        ".claude-plugin",
+        ".agents/plugins",
+        "plugins"
+      ],
+      "marketplace_files": {
+        "claude": ".claude-plugin/marketplace.json",
+        "codex": ".agents/plugins/marketplace.json"
+      },
+      "marketplace_files_required_phase": "published"
+    }
+  ],
+  "shared_component_roots": [
+    "shared/agents",
+    "shared/bin",
+    "shared/channels",
+    "shared/commands",
+    "shared/hook-scripts",
+    "shared/hooks",
+    "shared/lsp",
+    "shared/mcp",
+    "shared/monitors",
+    "shared/output-styles",
+    "shared/prompts",
+    "shared/scripts",
+    "shared/settings",
+    "shared/skills",
+    "shared/themes"
+  ],
+  "catalog_roots": [
+    "catalog/plugins"
+  ],
+  "template_roots": [
+    "templates/plugin"
+  ],
+  "generated_roots": [
+    "generated/claude",
+    "generated/codex"
+  ],
+  "source_layout_semantics": {
+    "shared": {
+      "role": "canonical reusable source content",
+      "contains": [
+        "skill directories",
+        "agent prompts",
+        "hook scripts",
+        "MCP config fragments",
+        "command bodies",
+        "theme files",
+        "other reusable capability content"
+      ],
+      "rule": "If a human edits the reusable capability itself, it belongs in shared."
+    },
+    "catalog": {
+      "role": "structured package metadata and generation instructions",
+      "contains": [
+        "plugin membership",
+        "target platforms",
+        "bucket ownership",
+        "provenance",
+        "generation rules",
+        "publishability",
+        "source-to-output mappings"
+      ],
+      "rule": "If a human edits inventory, ownership, targets, provenance, package membership, or generator behavior for a plugin package, it belongs in catalog/plugins."
+    },
+    "example_mapping": {
+      "source": "shared/skills/gh-address-comments",
+      "catalog": "catalog/plugins/vibin.yaml",
+      "meaning": "The shared path contains the skill body; the catalog path decides which Claude and Codex outputs include it."
+    }
+  },
+  "plugin_component_directories": [
+    ".claude-plugin",
+    ".codex-plugin",
+    "agents/claude",
+    "agents/codex",
+    "bin",
+    "channels",
+    "commands/claude",
+    "hooks/claude",
+    "hooks/codex",
+    "lsp",
+    "mcp",
+    "monitors",
+    "output-styles",
+    "settings",
+    "skills",
+    "themes"
+  ],
+  "root_directories_outside_marketplace_contract": [
+    "plugins"
+  ],
+  "migrated_root_directories": {
+    "skills": {
+      "canonical_replacement": "shared/skills",
+      "new_content_allowed": false,
+      "description": "Root skills was the previous active local skill inventory. After migration, local skill source belongs under shared/skills."
+    }
+  },
+  "invariants": [
+    "Marketplace buckets live at repo root.",
+    "Each marketplace bucket is a Claude and Codex marketplace root.",
+    "Shared component roots are source inputs, not installed marketplace roots.",
+    "Reusable skill source lives under shared/skills.",
+    "Generated output is not canonical source.",
+    "Root skills is not a canonical source directory after migration.",
+    "Root plugins is legacy or scratch until explicitly migrated.",
+    "No active repository structure or docs reference unsupported platforms."
+  ],
+  "platform_component_support": {
+    "agents": {
+      "claude": "plugin-native",
+      "codex": "local-config-or-generated-install"
+    },
+    "commands": {
+      "claude": "plugin-native",
+      "codex": "local-custom-slash-commands-supported-plugin-distribution-not-modeled"
+    },
+    "hooks": {
+      "claude": "plugin-native",
+      "codex": "plugin-manifest-support-observed-runtime-config-layer-oriented"
+    },
+    "skills": {
+      "claude": "plugin-native",
+      "codex": "plugin-native"
+    },
+    "output-styles": {
+      "claude": "plugin-native",
+      "codex": "unsupported"
+    },
+    "channels": {
+      "claude": "plugin-native",
+      "codex": "unsupported"
+    },
+    "monitors": {
+      "claude": "plugin-native",
+      "codex": "unsupported"
+    },
+    "themes": {
+      "claude": "plugin-native-experimental",
+      "codex": "unsupported"
+    },
+    "mcp": {
+      "claude": "plugin-native",
+      "codex": "plugin-native"
+    },
+    "lsp": {
+      "claude": "plugin-native",
+      "codex": "unsupported"
+    },
+    "bin": {
+      "claude": "plugin-native-path",
+      "codex": "scripts-only-no-path-contract"
+    },
+    "settings": {
+      "claude": "plugin-native-settings-json",
+      "codex": "platform-specific"
+    }
+  },
+  "platform_notes": {
+    "codex_commands": "Codex supports custom slash commands locally, but this contract does not assume a Codex plugin-distributed commands surface.",
+    "codex_hooks": "Codex hook docs emphasize config-layer discovery. Existing plugin manifests show a hooks field, so generators must treat Codex hooks as a distinct target instead of copying Claude hook semantics."
+  }
+}
