@@ -1,0 +1,858 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>jmagar/axon - GitHub + Beads Dashboard</title>
+  <style>
+    :root {
+      --aurora-page-bg: #07131c;
+      --aurora-nav-bg: #07111a;
+      --aurora-panel-medium: #102330;
+      --aurora-panel-strong: #13293a;
+      --aurora-control-surface: #0c1a24;
+      --aurora-hover-bg: #17364b;
+      --aurora-border-default: #1d3d4e;
+      --aurora-border-strong: #24536c;
+      --aurora-text-primary: #e6f4fb;
+      --aurora-text-muted: #a7bcc9;
+      --aurora-accent-primary: #29b6f6;
+      --aurora-accent-strong: #67cbfa;
+      --aurora-accent-pink: #f9a8c4;
+      --aurora-accent-violet: #a78bfa;
+      --aurora-success: #7dd3c7;
+      --aurora-warn: #c6a36b;
+      --aurora-error: #c78490;
+      --aurora-neutral: #91a8b6;
+      --aurora-shadow-medium: 0 12px 24px rgba(0, 0, 0, 0.18);
+      --aurora-shadow-strong: 0 20px 38px rgba(0, 0, 0, 0.26);
+      --aurora-highlight-medium: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+      --aurora-highlight-strong: inset 0 1px 0 rgba(255, 255, 255, 0.055);
+      --aurora-radius-1: 14px;
+      --aurora-radius-2: 18px;
+      --aurora-radius-3: 22px;
+      --font-display: Manrope, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, Menlo, monospace;
+      color-scheme: dark;
+      font-family: var(--font-sans);
+      font-feature-settings: "tnum", "lnum";
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      color: var(--aurora-text-primary);
+      background:
+        radial-gradient(circle at 12% 0%, rgba(41, 182, 246, 0.09), transparent 28%),
+        radial-gradient(circle at 88% 0%, rgba(28, 127, 172, 0.10), transparent 24%),
+        var(--aurora-page-bg);
+    }
+
+    a { color: inherit; text-decoration: none; }
+    button, input {
+      font: inherit;
+    }
+
+    .shell {
+      min-height: 100vh;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 268px minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    .sidebar,
+    .main,
+    .topbar,
+    .panel,
+    .stat,
+    .rail-card {
+      border: 1px solid var(--aurora-border-default);
+      box-shadow: var(--aurora-shadow-medium), var(--aurora-highlight-medium);
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 16px;
+      align-self: start;
+      height: calc(100vh - 32px);
+      overflow: auto;
+      border-radius: var(--aurora-radius-3);
+      background: color-mix(in srgb, var(--aurora-nav-bg) 94%, black);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 50px;
+    }
+
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 13px;
+      border: 1px solid color-mix(in srgb, var(--aurora-accent-primary) 48%, transparent);
+      background:
+        linear-gradient(135deg, rgba(41, 182, 246, .18), rgba(167, 139, 250, .12)),
+        var(--aurora-control-surface);
+      box-shadow: 0 0 30px rgba(41, 182, 246, .16), inset 0 1px 0 rgba(255,255,255,.06);
+      position: relative;
+    }
+
+    .brand-mark::after {
+      content: "";
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      right: 7px;
+      top: 7px;
+      background: var(--aurora-success);
+      box-shadow: 0 0 14px var(--aurora-success);
+    }
+
+    .brand-title {
+      font: 760 14px/1.15 var(--font-display);
+      letter-spacing: 0;
+    }
+
+    .brand-sub,
+    .muted {
+      color: var(--aurora-text-muted);
+    }
+
+    .brand-sub {
+      margin-top: 3px;
+      font-size: 11px;
+    }
+
+    .nav-group {
+      display: grid;
+      gap: 8px;
+    }
+
+    .nav-label {
+      margin-top: 4px;
+      color: var(--aurora-text-muted);
+      font-size: 11px;
+      font-weight: 650;
+      letter-spacing: .095em;
+      text-transform: uppercase;
+    }
+
+    .nav-item {
+      min-height: 36px;
+      border-radius: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 9px 10px;
+      color: var(--aurora-text-muted);
+      font-size: 13px;
+      border: 1px solid transparent;
+    }
+
+    .nav-item.active,
+    .nav-item:hover {
+      color: var(--aurora-text-primary);
+      background: color-mix(in srgb, var(--aurora-hover-bg) 72%, transparent);
+      border-color: var(--aurora-border-default);
+      box-shadow: var(--aurora-highlight-medium);
+    }
+
+    .count,
+    .mono {
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .count {
+      color: var(--aurora-accent-primary);
+    }
+
+    .rail-card {
+      border-radius: var(--aurora-radius-2);
+      background: color-mix(in srgb, var(--aurora-panel-medium) 78%, transparent);
+      padding: 12px;
+    }
+
+    .rail-card .caption {
+      color: var(--aurora-text-muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .main {
+      min-width: 0;
+      overflow: hidden;
+      border-radius: var(--aurora-radius-3);
+      background: color-mix(in srgb, var(--aurora-panel-medium) 82%, transparent);
+    }
+
+    .topbar {
+      min-height: 58px;
+      border-width: 0 0 1px;
+      box-shadow: var(--aurora-highlight-medium);
+      background: color-mix(in srgb, var(--aurora-panel-strong) 84%, transparent);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 12px 20px;
+    }
+
+    .topbar-title {
+      min-width: 0;
+    }
+
+    .topbar-title strong {
+      display: block;
+      font: 760 14px/1.2 var(--font-display);
+    }
+
+    .topbar-title span {
+      display: block;
+      margin-top: 3px;
+      color: var(--aurora-text-muted);
+      font-size: 12px;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn,
+    .search {
+      min-height: 34px;
+      border-radius: var(--aurora-radius-1);
+      border: 1px solid var(--aurora-border-default);
+      background: var(--aurora-control-surface);
+      color: var(--aurora-text-primary);
+      box-shadow: var(--aurora-highlight-medium);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 560;
+      cursor: pointer;
+    }
+
+    .btn.primary {
+      border-color: color-mix(in srgb, var(--aurora-accent-primary) 58%, transparent);
+      background:
+        linear-gradient(180deg, color-mix(in srgb, var(--aurora-accent-lift, var(--aurora-accent-strong)) 26%, transparent), transparent),
+        color-mix(in srgb, var(--aurora-accent-primary) 16%, var(--aurora-control-surface));
+      box-shadow: 0 0 0 1px rgba(41, 182, 246, .08), 0 0 22px rgba(41, 182, 246, .14), var(--aurora-highlight-medium);
+    }
+
+    .btn.rose {
+      border-color: color-mix(in srgb, var(--aurora-accent-pink) 40%, transparent);
+      color: var(--aurora-accent-pink);
+    }
+
+    .search {
+      width: min(280px, 34vw);
+      padding: 8px 12px;
+      outline: none;
+    }
+
+    .search:focus-visible,
+    .btn:focus-visible {
+      outline: 2px solid color-mix(in srgb, var(--aurora-accent-primary) 72%, transparent);
+      outline-offset: 2px;
+    }
+
+    .content {
+      padding: 22px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: end;
+    }
+
+    h1 {
+      margin: 0;
+      font: 800 28px/1.1 var(--font-display);
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      max-width: 860px;
+      margin-top: 8px;
+      color: var(--aurora-text-muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 24px;
+      border: 1px solid var(--aurora-neutral);
+      border-radius: 4px;
+      padding: 5px 7px;
+      font: 520 11px/1 var(--font-mono);
+      color: var(--aurora-neutral);
+      background: color-mix(in srgb, var(--aurora-neutral) 10%, transparent);
+      white-space: nowrap;
+    }
+
+    .badge::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: currentColor;
+      box-shadow: 0 0 10px currentColor;
+    }
+
+    .badge.info { color: var(--aurora-accent-primary); border-color: color-mix(in srgb, var(--aurora-accent-primary) 34%, transparent); background: color-mix(in srgb, var(--aurora-accent-primary) 10%, transparent); }
+    .badge.success { color: var(--aurora-success); border-color: color-mix(in srgb, var(--aurora-success) 34%, transparent); background: color-mix(in srgb, var(--aurora-success) 10%, transparent); }
+    .badge.warn { color: var(--aurora-warn); border-color: color-mix(in srgb, var(--aurora-warn) 34%, transparent); background: color-mix(in srgb, var(--aurora-warn) 10%, transparent); }
+    .badge.error { color: var(--aurora-error); border-color: color-mix(in srgb, var(--aurora-error) 34%, transparent); background: color-mix(in srgb, var(--aurora-error) 10%, transparent); }
+    .badge.violet { color: var(--aurora-accent-violet); border-color: color-mix(in srgb, var(--aurora-accent-violet) 34%, transparent); background: color-mix(in srgb, var(--aurora-accent-violet) 10%, transparent); }
+    .badge.rose { color: var(--aurora-accent-pink); border-color: color-mix(in srgb, var(--aurora-accent-pink) 32%, transparent); background: color-mix(in srgb, var(--aurora-accent-pink) 10%, transparent); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(176px, 220px));
+      gap: 12px;
+    }
+
+    .stat {
+      min-height: 108px;
+      border-radius: var(--aurora-radius-2);
+      background: var(--aurora-panel-strong);
+      padding: 14px;
+      display: grid;
+      align-content: space-between;
+    }
+
+    .stat-label {
+      color: var(--aurora-text-muted);
+      font-size: 12px;
+      font-weight: 560;
+    }
+
+    .stat-value {
+      margin-top: 12px;
+      font: 800 30px/1 var(--font-display);
+    }
+
+    .stat-note {
+      margin-top: 8px;
+      color: var(--aurora-text-muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.48fr) minmax(340px, .88fr);
+      gap: 16px;
+    }
+
+    .panel {
+      min-width: 0;
+      border-radius: var(--aurora-radius-3);
+      background: var(--aurora-panel-medium);
+      padding: 16px;
+    }
+
+    .panel.strong {
+      background: var(--aurora-panel-strong);
+      box-shadow: var(--aurora-shadow-strong), var(--aurora-highlight-strong);
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .panel-title {
+      font: 760 15px/1.25 var(--font-display);
+    }
+
+    .panel-sub {
+      margin-top: 4px;
+      color: var(--aurora-text-muted);
+      font-size: 12px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--aurora-border-default);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      min-width: 820px;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th {
+      text-align: left;
+      padding: 10px 12px;
+      color: var(--aurora-text-muted);
+      background: color-mix(in srgb, var(--aurora-page-bg) 42%, transparent);
+      font-size: 11px;
+      font-weight: 650;
+      letter-spacing: .095em;
+      text-transform: uppercase;
+    }
+
+    td {
+      padding: 13px 12px;
+      border-top: 1px solid var(--aurora-border-default);
+      color: var(--aurora-text-muted);
+      vertical-align: top;
+    }
+
+    td strong {
+      color: var(--aurora-text-primary);
+      font-weight: 560;
+    }
+
+    .queue {
+      display: grid;
+      gap: 10px;
+    }
+
+    .item {
+      border: 1px solid var(--aurora-border-default);
+      border-radius: var(--aurora-radius-1);
+      background: color-mix(in srgb, var(--aurora-page-bg) 22%, transparent);
+      padding: 12px;
+    }
+
+    .item-top {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .item-title {
+      margin-top: 8px;
+      color: var(--aurora-text-primary);
+      font-size: 13px;
+      line-height: 1.38;
+    }
+
+    .item-meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+      color: var(--aurora-text-muted);
+      font-size: 11px;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .run-list,
+    .activity-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .run,
+    .activity {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      border-top: 1px solid var(--aurora-border-default);
+      padding: 11px 0;
+    }
+
+    .run:first-child,
+    .activity:first-child {
+      border-top: 0;
+    }
+
+    .run-title,
+    .activity-title {
+      color: var(--aurora-text-primary);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .run-meta,
+    .activity-meta,
+    .source-note {
+      color: var(--aurora-text-muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .chart {
+      width: 100%;
+      height: 154px;
+      display: block;
+      margin-top: 10px;
+      border: 1px solid var(--aurora-border-default);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--aurora-page-bg) 28%, transparent);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 1120px) {
+      .shell { grid-template-columns: 1fr; }
+      .sidebar { position: static; height: auto; }
+      .layout, .split { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 720px) {
+      .shell { padding: 10px; }
+      .content { padding: 14px; }
+      .topbar, .hero { grid-template-columns: 1fr; align-items: start; }
+      .topbar { flex-direction: column; }
+      .search { width: 100%; }
+      .badges { justify-content: flex-start; }
+      h1 { font-size: 23px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar" data-od-id="sidebar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"></div>
+        <div>
+          <div class="brand-title">Axon delivery console</div>
+          <div class="brand-sub">GitHub + Beads control surface</div>
+        </div>
+      </div>
+
+      <nav class="nav-group" aria-label="Dashboard navigation">
+        <div class="nav-label">Repository</div>
+        <a class="nav-item active" href="#overview">Overview <span class="count" data-live="openPrs">2</span></a>
+        <a class="nav-item" href="#pulls">Pull requests <span class="count">2</span></a>
+        <a class="nav-item" href="#issues">GitHub issues <span class="count" data-live="openIssues">27</span></a>
+        <a class="nav-item" href="#runs">CI runs <span class="count">8</span></a>
+      </nav>
+
+      <nav class="nav-group" aria-label="Beads navigation">
+        <div class="nav-label">Beads</div>
+        <a class="nav-item" href="#beads-ready">Ready work <span class="count">21</span></a>
+        <a class="nav-item" href="#beads-blocked">Blocked <span class="count">8</span></a>
+        <a class="nav-item" href="#beads-active">In progress <span class="count">2</span></a>
+      </nav>
+
+      <div class="rail-card">
+        <span class="badge warn">Dirty checkout</span>
+        <p class="caption">The local Axon checkout had unrelated modified web and Chrome extension files when this snapshot was collected. Dashboard generation only read from that tree.</p>
+      </div>
+
+      <div class="rail-card">
+        <span class="badge violet">Snapshot</span>
+        <p class="caption">Generated from live `gh` and local `bd` commands at 2026-05-20T01:55:59Z.</p>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar" data-od-id="topbar">
+        <div class="topbar-title">
+          <strong>jmagar/axon</strong>
+          <span>Self-hosted web crawling and RAG pipeline with MCP tooling</span>
+        </div>
+        <div class="actions">
+          <input id="filter" class="search" type="search" placeholder="Filter PRs, beads, runs" aria-label="Filter dashboard rows" />
+          <a class="btn" href="https://github.com/jmagar/axon">GitHub</a>
+          <button id="refreshGithub" class="btn primary" type="button">Refresh GitHub</button>
+        </div>
+      </header>
+
+      <div class="content">
+        <section class="hero" data-od-id="repo-header" id="overview">
+          <div>
+            <h1>Axon repository operations</h1>
+            <p class="subtitle">Live GitHub snapshot for <span class="mono">jmagar/axon</span> paired with the local Beads queue from <span class="mono">/home/jmagar/workspace/axon_rust</span>. The page is a direct-open artifact; the GitHub metrics can refresh in-browser, while Beads reflects the local snapshot embedded at generation time.</p>
+          </div>
+          <div class="badges">
+            <span class="badge warn">CI in progress</span>
+            <span class="badge error">1 PR failing</span>
+            <span class="badge info">Rust</span>
+          </div>
+        </section>
+
+        <section class="stats" data-od-id="kpi-strip">
+          <article class="stat">
+            <div class="stat-label">Open PRs</div>
+            <div class="stat-value" data-live="openPrs">2</div>
+            <div class="stat-note">PR #115 in progress, PR #114 has one failing check</div>
+          </article>
+          <article class="stat">
+            <div class="stat-label">GitHub issues</div>
+            <div class="stat-value" data-live="openIssues">27</div>
+            <div class="stat-note">Open upstream issue backlog</div>
+          </article>
+          <article class="stat">
+            <div class="stat-label">Ready beads</div>
+            <div class="stat-value">21</div>
+            <div class="stat-note">Local issue queue ready to claim</div>
+          </article>
+          <article class="stat">
+            <div class="stat-label">Blocked beads</div>
+            <div class="stat-value">8</div>
+            <div class="stat-note">Mostly endpoint-discovery dependency chain</div>
+          </article>
+          <article class="stat">
+            <div class="stat-label">In progress</div>
+            <div class="stat-value">2</div>
+            <div class="stat-note">Ask performance epic and full-doc fetch audit</div>
+          </article>
+          <article class="stat">
+            <div class="stat-label">Repo stars</div>
+            <div class="stat-value" data-live="stars">2</div>
+            <div class="stat-note"><span data-live="forks">1</span> fork, <span data-live="watchers">0</span> watchers</div>
+          </article>
+        </section>
+
+        <section class="layout">
+          <article class="panel strong" data-od-id="pr-health" id="pulls">
+            <div class="panel-head">
+              <div>
+                <div class="panel-title">Pull request health</div>
+                <div class="panel-sub">Review, check, and delivery state for open GitHub PRs</div>
+              </div>
+              <span class="badge warn">5 pending checks</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>PR</th>
+                    <th>Title</th>
+                    <th>Checks</th>
+                    <th>Pending</th>
+                    <th>Risk</th>
+                    <th>Updated</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="filterable" data-filter="115 cut over server mode clients to rest pending ci">
+                    <td class="mono"><a href="https://github.com/jmagar/axon/pull/115">#115</a></td>
+                    <td><strong>Cut over server mode clients to REST</strong><div class="muted">Author: jmagar</div></td>
+                    <td><span class="badge warn">19 success / 4 pending</span></td>
+                    <td>image-build-smoke, windows-build, test, mcp-smoke, code review</td>
+                    <td><span class="badge warn">Waiting</span></td>
+                    <td>2026-05-20 01:53 UTC</td>
+                  </tr>
+                  <tr class="filterable" data-filter="114 add endpoint discovery mcp smoke failing endpoint discovery">
+                    <td class="mono"><a href="https://github.com/jmagar/axon/pull/114">#114</a></td>
+                    <td><strong>Add endpoint discovery</strong><div class="muted">Author: jmagar</div></td>
+                    <td><span class="badge error">20 success / 1 fail / 2 pending</span></td>
+                    <td>image-build-smoke, windows-build</td>
+                    <td><span class="badge error">mcp-smoke failed</span></td>
+                    <td>2026-05-20 01:42 UTC</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <aside class="panel" data-od-id="beads-active" id="beads-active">
+            <div class="panel-head">
+              <div>
+                <div class="panel-title">Active Beads</div>
+                <div class="panel-sub">Currently claimed work in the local tracker</div>
+              </div>
+              <span class="badge violet">2 active</span>
+            </div>
+            <div class="queue">
+              <div class="item filterable" data-filter="axon_rust-cmm ask perf batch full doc fetch parallelism audit in progress">
+                <div class="item-top"><span class="badge violet">axon_rust-cmm</span><span class="badge warn">P1</span></div>
+                <div class="item-title">ask perf 0.3: batch full-doc fetch + parallelism audit</div>
+                <div class="item-meta"><span>task</span><span>blocked by j2c, nm9</span><span>updated 2026-05-07</span></div>
+              </div>
+              <div class="item filterable" data-filter="axon_rust-kj9 ask perf epic speed up axon ask without quality loss in progress">
+                <div class="item-top"><span class="badge violet">axon_rust-kj9</span><span class="badge warn">P1</span></div>
+                <div class="item-title">ask perf: epic - speed up axon ask without quality loss</div>
+                <div class="item-meta"><span>feature</span><span>blocked by 6dl</span><span>updated 2026-05-16</span></div>
+              </div>
+            </div>
+          </aside>
+        </section>
+
+        <section class="layout">
+          <article class="panel" data-od-id="beads-ready" id="beads-ready">
+            <div class="panel-head">
+              <div>
+                <div class="panel-title">Ready Beads</div>
+                <div class="panel-sub">Top ready items from <span class="mono">bd ready --json</span></div>
+              </div>
+              <span class="badge success">21 ready</span>
+            </div>
+            <div class="queue">
+              <div class="item filterable" data-filter="axon_rust-w2wf.1 layer 1 endpoint parser endpoint discovery parser webclaw port"><div class="item-top"><span class="badge success">axon_rust-w2wf.1</span><span class="badge">P2</span></div><div class="item-title">Layer 1 endpoint parser</div><div class="item-meta"><span>task</span><span>endpoint-discovery</span><span>updated 2026-05-19</span></div></div>
+              <div class="item filterable" data-filter="axon_rust-w2wf epic add endpoint discovery"><div class="item-top"><span class="badge success">axon_rust-w2wf</span><span class="badge">P2</span></div><div class="item-title">Epic: Add endpoint discovery</div><div class="item-meta"><span>epic</span><span>plan-reviewed</span><span>updated 2026-05-19</span></div></div>
+              <div class="item filterable" data-filter="axon_rust-9dse pr 105 review rest.rs coderabbit module tree"><div class="item-top"><span class="badge rose">axon_rust-9dse</span><span class="badge">P2</span></div><div class="item-title">PR #105 review: standard module declarations need broader module-tree migration</div><div class="item-meta"><span>task</span><span>pr-review</span><span>updated 2026-05-19</span></div></div>
+              <div class="item filterable" data-filter="axon_rust-cs8a pr 105 review cargo version cubic"><div class="item-top"><span class="badge rose">axon_rust-cs8a</span><span class="badge">P2</span></div><div class="item-title">PR #105 review: version policy decision for documented breaking auth behavior</div><div class="item-meta"><span>task</span><span>pr-review</span><span>updated 2026-05-19</span></div></div>
+              <div class="item filterable" data-filter="axon_rust-yvzr pr 105 review rest tests duplicated scaffolding"><div class="item-top"><span class="badge rose">axon_rust-yvzr</span><span class="badge">P2</span></div><div class="item-title">PR #105 review: shared auth/server test scaffolding refactor</div><div class="item-meta"><span>task</span><span>pr-review</span><span>updated 2026-05-19</span></div></div>
+            </div>
+          </article>
+
+          <aside class="panel" data-od-id="beads-blocked" id="beads-blocked">
+            <div class="panel-head">
+              <div>
+                <div class="panel-title">Blocked chain</div>
+                <div class="panel-sub">Dependency-driven work that should unblock in order</div>
+              </div>
+              <span class="badge warn">8 blocked</span>
+            </div>
+            <div class="queue">
+              <div class="item filterable" data-filter="axon_rust-w2wf.3 endpoint discovery mcp action rest wiring blocked by w2wf.2"><div class="item-top"><span class="badge warn">axon_rust-w2wf.3</span><span class="badge">P2</span></div><div class="item-title">Endpoint discovery MCP action and REST wiring</div><div class="item-meta"><span>blocked by axon_rust-w2wf.2</span></div></div>
+              <div class="item filterable" data-filter="axon_rust-w2wf.4 layer 2 endpoint verification blocked by w2wf.2"><div class="item-top"><span class="badge warn">axon_rust-w2wf.4</span><span class="badge">P2</span></div><div class="item-title">Layer 2 endpoint verification</div><div class="item-meta"><span>blocked by axon_rust-w2wf.2</span></div></div>
+              <div class="item filterable" data-filter="axon_rust-w2wf.2 layer 1 endpoint service and cli blocked by w2wf.1"><div class="item-top"><span class="badge warn">axon_rust-w2wf.2</span><span class="badge">P2</span></div><div class="item-title">Layer 1 endpoint service and CLI</div><div class="item-meta"><span>blocked by axon_rust-w2wf.1</span></div></div>
+              <div class="item filterable" data-filter="axon_rust-w2wf.6 endpoint discovery docs blocked"><div class="item-top"><span class="badge warn">axon_rust-w2wf.6</span><span class="badge">P3</span></div><div class="item-title">Endpoint discovery docs</div><div class="item-meta"><span>blocked by w2wf.3, w2wf.4, w2wf.5</span></div></div>
+            </div>
+          </aside>
+        </section>
+
+        <section class="split">
+          <article class="panel" data-od-id="runs" id="runs">
+            <div class="panel-head">
+              <div>
+                <div class="panel-title">Recent CI runs</div>
+                <div class="panel-sub">Latest GitHub Actions runs for <span class="mono">jmagar/axon</span></div>
+              </div>
+            </div>
+            <div class="run-list">
+              <div class="run filterable" data-filter="ci cut over server mode clients to rest in progress"><div><div class="run-title">CI - Cut over server mode clients to REST</div><div class="run-meta">pull_request · run 26136431782</div></div><span class="badge warn">in progress</span></div>
+              <div class="run filterable" data-filter="compose smoke cut over server mode clients to rest in progress"><div><div class="run-title">Compose smoke - Cut over server mode clients to REST</div><div class="run-meta">pull_request · run 26136431772</div></div><span class="badge warn">in progress</span></div>
+              <div class="run filterable" data-filter="claude code skipped pull request review comment"><div><div class="run-title">Claude Code review-comment runs</div><div class="run-meta">six recent runs skipped by workflow policy</div></div><span class="badge">skipped</span></div>
+            </div>
+          </article>
+
+          <article class="panel" data-od-id="issues" id="issues">
+            <div class="panel-head">
+              <div>
+                <div class="panel-title">Backlog composition</div>
+                <div class="panel-sub">Local Beads issue state versus GitHub issue surface</div>
+              </div>
+            </div>
+            <svg class="chart" viewBox="0 0 640 180" role="img" aria-label="Beads backlog bar chart">
+              <line x1="36" y1="144" x2="604" y2="144" stroke="#1d3d4e" />
+              <rect x="70" y="30" width="66" height="114" rx="8" fill="#29b6f6" opacity=".78" />
+              <rect x="170" y="80" width="66" height="64" rx="8" fill="#7dd3c7" opacity=".78" />
+              <rect x="270" y="120" width="66" height="24" rx="8" fill="#a78bfa" opacity=".78" />
+              <rect x="370" y="106" width="66" height="38" rx="8" fill="#c6a36b" opacity=".78" />
+              <rect x="470" y="16" width="66" height="128" rx="8" fill="#91a8b6" opacity=".52" />
+              <text x="103" y="164" text-anchor="middle" fill="#a7bcc9" font-size="12">Open 29</text>
+              <text x="203" y="164" text-anchor="middle" fill="#a7bcc9" font-size="12">Ready 21</text>
+              <text x="303" y="164" text-anchor="middle" fill="#a7bcc9" font-size="12">Active 2</text>
+              <text x="403" y="164" text-anchor="middle" fill="#a7bcc9" font-size="12">Blocked 8</text>
+              <text x="503" y="164" text-anchor="middle" fill="#a7bcc9" font-size="12">GH 27</text>
+            </svg>
+            <p class="source-note">Beads has 836 total issues: 804 closed, 29 open, 1 deferred. GitHub currently reports 27 open issues.</p>
+          </article>
+        </section>
+
+        <section class="panel" data-od-id="provenance">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Source notes</div>
+              <div class="panel-sub">Commands used to build this artifact</div>
+            </div>
+            <span class="badge info" id="refreshState">static snapshot</span>
+          </div>
+          <div class="activity-list">
+            <div class="activity"><div><div class="activity-title">GitHub repo metadata</div><div class="activity-meta mono">gh repo view jmagar/axon --json nameWithOwner,description,url,primaryLanguage,licenseInfo,updatedAt,stargazerCount,forkCount,watchers</div></div><span class="badge success">live</span></div>
+            <div class="activity"><div><div class="activity-title">GitHub PR and check state</div><div class="activity-meta mono">gh pr list --repo jmagar/axon --state open --json number,title,author,updatedAt,labels,isDraft,reviewDecision,statusCheckRollup,url</div></div><span class="badge success">live</span></div>
+            <div class="activity"><div><div class="activity-title">Beads local queues</div><div class="activity-meta mono">bd status; bd stats --json; bd ready --json; bd blocked --json; bd list --status=in_progress --json</div></div><span class="badge violet">local</span></div>
+            <div class="activity"><div><div class="activity-title">Local checkout path</div><div class="activity-meta mono">/home/jmagar/workspace/axon_rust</div></div><span class="badge warn">dirty</span></div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const filterInput = document.getElementById("filter");
+    const refreshButton = document.getElementById("refreshGithub");
+    const refreshState = document.getElementById("refreshState");
+
+    function setLive(key, value) {
+      document.querySelectorAll(`[data-live="${key}"]`).forEach((node) => {
+        node.textContent = value;
+      });
+    }
+
+    filterInput.addEventListener("input", () => {
+      const query = filterInput.value.trim().toLowerCase();
+      document.querySelectorAll(".filterable").forEach((node) => {
+        const haystack = node.dataset.filter || node.textContent.toLowerCase();
+        node.classList.toggle("hidden", query && !haystack.includes(query));
+      });
+    });
+
+    refreshButton.addEventListener("click", async () => {
+      refreshButton.disabled = true;
+      refreshState.className = "badge warn";
+      refreshState.textContent = "refreshing";
+      try {
+        const [repo, pulls, issues] = await Promise.all([
+          fetch("https://api.github.com/repos/jmagar/axon").then((res) => res.json()),
+          fetch("https://api.github.com/repos/jmagar/axon/pulls?state=open&per_page=100").then((res) => res.json()),
+          fetch("https://api.github.com/repos/jmagar/axon/issues?state=open&per_page=100").then((res) => res.json())
+        ]);
+        const issueOnly = Array.isArray(issues) ? issues.filter((item) => !item.pull_request) : [];
+        setLive("stars", repo.stargazers_count ?? "n/a");
+        setLive("forks", repo.forks_count ?? "n/a");
+        setLive("watchers", repo.subscribers_count ?? repo.watchers_count ?? "n/a");
+        setLive("openPrs", Array.isArray(pulls) ? pulls.length : "n/a");
+        setLive("openIssues", issueOnly.length);
+        refreshState.className = "badge success";
+        refreshState.textContent = "GitHub refreshed";
+      } catch (error) {
+        refreshState.className = "badge error";
+        refreshState.textContent = "refresh failed";
+      } finally {
+        refreshButton.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
