@@ -7,6 +7,8 @@ description: Use whenever building, modifying, or styling React/Next.js UI for a
 
 Aurora is the operator-grade design system that powers Labby and the broader Lab gateway-admin surfaces. It is published as a shadcn-compatible registry at `aurora.tootie.tv` and lives in source at `~/workspace/aurora-design-system`. Use it whenever you're producing React/Next.js UI that should look like it belongs in that family.
 
+If the user invokes this skill without a concrete build target, ask what surface they want designed or implemented and whether the output should be production code, a static HTML artifact, or a mock/prototype. Keep the questions short, then proceed as an expert designer once the target is clear.
+
 The non-negotiables Aurora gives you and that every consumer must respect:
 
 - Dark-first, navy lift tiers — flat page, raised toolbars/headers, strongly raised inspector panels
@@ -70,6 +72,18 @@ import { Manrope, Inter, JetBrains_Mono } from "next/font/google"
 ```
 
 Toggle light with `document.documentElement.classList.toggle("light")` and remove `"dark"`. Both modes must remain usable — verify the surface in `.light` before shipping.
+
+## When you're making static artifacts
+
+For slides, mocks, throwaway prototypes, design reviews, and other non-production visual artifacts, create a static HTML file the user can open directly unless the artifact genuinely needs a dev server.
+
+- Load Manrope, Inter, and JetBrains Mono from Google Fonts.
+- Include the Aurora token layer in the artifact folder: copy the source CSS when available, or embed only the required token/type/page-shell CSS for a self-contained mock.
+- Default to dark mode with `<html class="dark">` and put the main canvas on `<body class="aurora-page-shell">` or a top-level `.aurora-page-shell` wrapper.
+- Copy any needed brand assets into the artifact directory and reference them locally. Do not hotlink, redraw, or approximate the Labby mark when a real asset exists.
+- Use Lucide icons through the web package/CDN or inline icon markup that matches Lucide stroke rules: 14-18px, `currentColor`, 1.5-1.75 stroke.
+- Keep the artifact faithful to Aurora's production rules: tokenized colors, Tier 2 panels, border + glow selection, sentence case copy, muted status colors, and no emoji.
+- If you create an HTML artifact, tell the user the local path and whether it is static-openable or served by a dev server.
 
 ## Tokens — never raw hex
 
