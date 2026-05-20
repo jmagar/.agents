@@ -1,0 +1,33 @@
+{
+  "generatedAt": "2026-05-20T00:00:00Z",
+  "repository": "jmagar/.agents",
+  "workspace": "/home/jmagar/.agents",
+  "sources": [
+    {
+      "label": "GitHub repository metadata",
+      "command": "gh repo view jmagar/.agents --json nameWithOwner,description,url,primaryLanguage,licenseInfo,updatedAt,stargazerCount,forkCount,watchers",
+      "status": "live"
+    },
+    {
+      "label": "Open pull requests",
+      "command": "gh pr list --repo jmagar/.agents --state open --json number,title,author,updatedAt,labels,isDraft,reviewDecision,statusCheckRollup",
+      "status": "live"
+    },
+    {
+      "label": "Beads ready queue",
+      "command": "bd ready --json",
+      "status": "live"
+    },
+    {
+      "label": "Beads stale queue",
+      "command": "bd stale --json",
+      "status": "fallback",
+      "note": "Use plain text parsing if installed bd lacks JSON output."
+    }
+  ],
+  "privacy": {
+    "storedCredentials": false,
+    "storedHeaders": false,
+    "storedPrivateCloneUrls": false
+  }
+}

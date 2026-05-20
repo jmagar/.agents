@@ -1,0 +1,12 @@
+{
+  "name": "github-beads-dashboard",
+  "title": "GitHub + Beads Dashboard",
+  "description": "Repository delivery dashboard combining GitHub PR health with Beads issue queues.",
+  "template": "template.html",
+  "data": "data.json",
+  "provenance": "provenance.json",
+  "refresh": {
+    "manual": true,
+    "recommendedIntervalMinutes": 15
+  }
+}

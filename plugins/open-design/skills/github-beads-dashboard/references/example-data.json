@@ -1,0 +1,152 @@
+{
+  "repository": {
+    "name": ".agents",
+    "fullName": "jmagar/.agents",
+    "url": "https://github.com/jmagar/.agents",
+    "description": "Curated agent plugins, skills, and local workflow artifacts.",
+    "language": "Markdown",
+    "license": "Unspecified",
+    "lastUpdated": "May 20, 2026"
+  },
+  "githubMetrics": {
+    "stars": "14",
+    "forks": "2",
+    "watchers": "3",
+    "openIssues": "6",
+    "openPullRequests": "3",
+    "draftPullRequests": "1",
+    "reviewNeeded": "2",
+    "failingChecks": "1"
+  },
+  "beadsMetrics": {
+    "total": "38",
+    "open": "11",
+    "inProgress": "2",
+    "ready": "5",
+    "blocked": "3",
+    "stale": "4",
+    "closed": "27"
+  },
+  "delivery": {
+    "health": "Needs review",
+    "healthTone": "warn",
+    "risk": "Moderate",
+    "riskTone": "warn",
+    "readiness": "72%",
+    "sync": "Synced 6 minutes ago"
+  },
+  "pullRequests": [
+    {
+      "number": "#42",
+      "title": "Add dashboard skill artifacts",
+      "author": "jmagar",
+      "updated": "12 minutes ago",
+      "review": "Review required",
+      "reviewTone": "warn",
+      "checks": "Passing",
+      "checkTone": "success",
+      "state": "Open"
+    },
+    {
+      "number": "#41",
+      "title": "Refresh plugin marketplace layout",
+      "author": "bot-maintainer",
+      "updated": "2 hours ago",
+      "review": "Approved",
+      "reviewTone": "success",
+      "checks": "Failing",
+      "checkTone": "error",
+      "state": "Open"
+    },
+    {
+      "number": "#40",
+      "title": "Draft Codex plugin packaging pass",
+      "author": "jmagar",
+      "updated": "1 day ago",
+      "review": "Draft",
+      "reviewTone": "neutral",
+      "checks": "Pending",
+      "checkTone": "info",
+      "state": "Draft"
+    }
+  ],
+  "beadsQueues": {
+    "ready": [
+      {
+        "id": "agents-12f",
+        "title": "Add GitHub + Beads dashboard template",
+        "priority": "P1",
+        "type": "feature",
+        "owner": "jmagar",
+        "updated": "8 minutes ago"
+      },
+      {
+        "id": "agents-7pz",
+        "title": "Validate marketplace skill discovery",
+        "priority": "P2",
+        "type": "task",
+        "owner": "unassigned",
+        "updated": "3 hours ago"
+      }
+    ],
+    "blocked": [
+      {
+        "id": "agents-k6m",
+        "title": "Publish refreshed plugin bundle",
+        "priority": "P1",
+        "type": "task",
+        "owner": "jmagar",
+        "blockedBy": "agents-12f"
+      }
+    ],
+    "stale": [
+      {
+        "id": "agents-93d",
+        "title": "Audit imported third-party skill payloads",
+        "priority": "P2",
+        "type": "task",
+        "updated": "14 days ago"
+      }
+    ]
+  },
+  "recentActivity": [
+    {
+      "source": "GitHub",
+      "title": "PR #42 opened",
+      "detail": "Add dashboard skill artifacts",
+      "tone": "info",
+      "updated": "12 minutes ago"
+    },
+    {
+      "source": "Beads",
+      "title": "agents-12f claimed",
+      "detail": "Dashboard template implementation started",
+      "tone": "violet",
+      "updated": "8 minutes ago"
+    },
+    {
+      "source": "GitHub",
+      "title": "Check failed on #41",
+      "detail": "validate-skills exited non-zero",
+      "tone": "error",
+      "updated": "1 hour ago"
+    }
+  ],
+  "provenance": [
+    {
+      "label": "GitHub repository",
+      "source": "gh repo view jmagar/.agents",
+      "status": "live"
+    },
+    {
+      "label": "Beads queues",
+      "source": "bd ready --json, bd blocked --json, bd stale --json",
+      "status": "live"
+    },
+    {
+      "label": "Growth metrics",
+      "source": "not included; GitHub REST does not expose full history",
+      "status": "omitted"
+    }
+  ]
+}
