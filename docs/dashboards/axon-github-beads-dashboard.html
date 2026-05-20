@@ -343,7 +343,7 @@
 
     .stats {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(176px, 220px));
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
       gap: 12px;
     }
 
@@ -354,6 +354,138 @@
       padding: 14px;
       display: grid;
       align-content: space-between;
+    }
+
+    .command-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(320px, .85fr);
+      gap: 16px;
+    }
+
+    .focus-card {
+      border: 1px solid color-mix(in srgb, var(--aurora-accent-primary) 28%, var(--aurora-border-default));
+      border-radius: var(--aurora-radius-3);
+      background:
+        linear-gradient(135deg, rgba(41, 182, 246, .10), rgba(125, 211, 199, .045) 45%, rgba(12, 26, 36, .28)),
+        var(--aurora-panel-strong);
+      box-shadow: var(--aurora-shadow-strong), var(--aurora-highlight-strong);
+      padding: 18px;
+      min-width: 0;
+    }
+
+    .focus-kicker {
+      color: var(--aurora-accent-primary);
+      font: 650 11px/1 var(--font-mono);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .focus-title {
+      margin-top: 10px;
+      max-width: 900px;
+      font: 800 24px/1.12 var(--font-display);
+      letter-spacing: 0;
+    }
+
+    .focus-copy {
+      max-width: 860px;
+      margin-top: 10px;
+      color: var(--aurora-text-muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .focus-actions {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .action-tile,
+    .signal {
+      border: 1px solid var(--aurora-border-default);
+      border-radius: var(--aurora-radius-1);
+      background: color-mix(in srgb, var(--aurora-page-bg) 28%, transparent);
+      padding: 12px;
+      min-width: 0;
+    }
+
+    .action-label,
+    .signal-label {
+      color: var(--aurora-text-muted);
+      font: 620 11px/1.1 var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .action-title,
+    .signal-title {
+      margin-top: 8px;
+      color: var(--aurora-text-primary);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .action-meta,
+    .signal-meta {
+      margin-top: 7px;
+      color: var(--aurora-text-muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .signal-board {
+      display: grid;
+      gap: 10px;
+    }
+
+    .signal {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+    }
+
+    .signal-dot {
+      width: 11px;
+      height: 11px;
+      margin-top: 2px;
+      border-radius: 999px;
+      background: currentColor;
+      box-shadow: 0 0 14px currentColor;
+    }
+
+    .signal.error { color: var(--aurora-error); }
+    .signal.warn { color: var(--aurora-warn); }
+    .signal.success { color: var(--aurora-success); }
+
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .pipe-node {
+      border: 1px solid var(--aurora-border-default);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--aurora-page-bg) 22%, transparent);
+      padding: 10px;
+      min-height: 74px;
+    }
+
+    .pipe-node strong {
+      display: block;
+      font: 720 13px/1.2 var(--font-display);
+    }
+
+    .pipe-node span {
+      display: block;
+      margin-top: 7px;
+      color: var(--aurora-text-muted);
+      font-size: 11px;
+      line-height: 1.35;
     }
 
     .stat-label {
@@ -540,7 +672,7 @@
     @media (max-width: 1120px) {
       .shell { grid-template-columns: 1fr; }
       .sidebar { position: static; height: auto; }
-      .layout, .split { grid-template-columns: 1fr; }
+      .layout, .split, .command-grid { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 720px) {
@@ -551,6 +683,8 @@
       .search { width: 100%; }
       .badges { justify-content: flex-start; }
       h1 { font-size: 23px; }
+      .focus-actions, .pipeline { grid-template-columns: 1fr; }
+      .focus-title { font-size: 21px; }
     }
   </style>
 </head>
@@ -587,7 +721,7 @@
 
       <div class="rail-card">
         <span class="badge violet">Snapshot</span>
-        <p class="caption">Generated from live `gh` and local `bd` commands at 2026-05-20T01:55:59Z.</p>
+            <p class="caption">Generated from live GitHub and local Beads commands at 2026-05-20T01:55:59Z.</p>
       </div>
     </aside>
 
@@ -607,14 +741,72 @@
       <div class="content">
         <section class="hero" data-od-id="repo-header" id="overview">
           <div>
-            <h1>Axon repository operations</h1>
-            <p class="subtitle">Live GitHub snapshot for <span class="mono">jmagar/axon</span> paired with the local Beads queue from <span class="mono">/home/jmagar/workspace/axon_rust</span>. The page is a direct-open artifact; the GitHub metrics can refresh in-browser, while Beads reflects the local snapshot embedded at generation time.</p>
+            <h1>Axon delivery operations</h1>
+            <p class="subtitle">A working surface for <span class="mono">jmagar/axon</span>: current PR risk, CI status, and the local Beads queue from <span class="mono">/home/jmagar/workspace/axon_rust</span>. GitHub counts can refresh in-browser; Beads is the embedded local snapshot.</p>
           </div>
           <div class="badges">
             <span class="badge warn">CI in progress</span>
             <span class="badge error">1 PR failing</span>
             <span class="badge info">Rust</span>
           </div>
+        </section>
+
+        <section class="command-grid" data-od-id="priority-lane">
+          <article class="focus-card">
+            <div class="focus-kicker">Priority lane</div>
+            <div class="focus-title">Clear the endpoint discovery failure, then let the REST cutover checks settle.</div>
+            <p class="focus-copy">The repo is not blocked by backlog volume; it is blocked by delivery risk. PR #114 has a concrete <span class="mono">mcp-smoke</span> failure, while PR #115 is mostly waiting on CI. The Beads chain says the next useful local move is still the endpoint parser and service path.</p>
+            <div class="focus-actions">
+              <div class="action-tile filterable" data-filter="next action pr 114 mcp smoke endpoint discovery">
+                <div class="action-label">Fix first</div>
+                <div class="action-title">PR #114 mcp-smoke</div>
+                <div class="action-meta">One failed check is the clearest merge blocker.</div>
+              </div>
+              <div class="action-tile filterable" data-filter="watch pr 115 ci windows image build smoke test">
+                <div class="action-label">Watch</div>
+                <div class="action-title">PR #115 pending CI</div>
+                <div class="action-meta">Image, Windows, test, MCP smoke, and review are still pending.</div>
+              </div>
+              <div class="action-tile filterable" data-filter="claim axon_rust-w2wf.1 layer 1 endpoint parser">
+                <div class="action-label">Claim next</div>
+                <div class="action-title">axon_rust-w2wf.1</div>
+                <div class="action-meta">Layer 1 endpoint parser unlocks the local dependency chain.</div>
+              </div>
+            </div>
+            <div class="pipeline" aria-label="Delivery pipeline">
+              <div class="pipe-node"><strong>GitHub</strong><span>2 open PRs, 27 open issues</span></div>
+              <div class="pipe-node"><strong>CI</strong><span>1 failed PR check, 2 active runs</span></div>
+              <div class="pipe-node"><strong>Beads</strong><span>21 ready, 2 in progress</span></div>
+              <div class="pipe-node"><strong>Blockers</strong><span>8 blocked, mostly endpoint discovery</span></div>
+            </div>
+          </article>
+
+          <aside class="signal-board" data-od-id="signal-board" aria-label="Operational signals">
+            <div class="signal error filterable" data-filter="risk mcp smoke failed pr 114">
+              <span class="signal-dot" aria-hidden="true"></span>
+              <div>
+                <div class="signal-label">Delivery risk</div>
+                <div class="signal-title">PR #114 is red on mcp-smoke.</div>
+                <div class="signal-meta">Treat this as the current release gate.</div>
+              </div>
+            </div>
+            <div class="signal warn filterable" data-filter="queue pressure ready beads blocked dependency chain">
+              <span class="signal-dot" aria-hidden="true"></span>
+              <div>
+                <div class="signal-label">Queue pressure</div>
+                <div class="signal-title">21 ready beads, 8 blocked.</div>
+                <div class="signal-meta">The endpoint discovery chain is the highest-leverage queue work.</div>
+              </div>
+            </div>
+            <div class="signal success filterable" data-filter="repo health rust stars forks active">
+              <span class="signal-dot" aria-hidden="true"></span>
+              <div>
+                <div class="signal-label">Repo health</div>
+                <div class="signal-title">Rust repo is live and active.</div>
+                <div class="signal-meta">2 stars, 1 fork, recent updates, and active checks.</div>
+              </div>
+            </div>
+          </aside>
         </section>
 
         <section class="stats" data-od-id="kpi-strip">
