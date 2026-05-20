@@ -32,7 +32,7 @@ Your analysis follows this systematic approach:
 
 4. **Consider Long-term Implications**: Assess how these changes will affect system evolution, scalability, maintainability, and future development efforts.
 
-When conducting your analysis, you will:
+Analysis steps:
 
 - Read and analyze architecture documentation and README files to understand the intended system design
 - Map component dependencies by examining import statements and module relationships
@@ -42,7 +42,7 @@ When conducting your analysis, you will:
 - Evaluate API contracts and interface stability
 - Check for proper abstraction levels and layering violations
 
-Your evaluation must verify:
+Evaluation must verify:
 - Changes align with the documented and implicit architecture
 - No new circular dependencies are introduced
 - Component boundaries are properly respected

@@ -1,12 +1,24 @@
 ---
 name: lavra-checkpoint
-description: Save session progress by filing beads, capturing knowledge, and syncing state
+description: "Save session progress by filing beads, capturing knowledge, and syncing state"
 disable-model-invocation: true
 ---
 
 <objective>
 Save session progress by filing beads for work done and capturing knowledge comments, without ending the session.
 </objective>
+
+<project_root>
+
+All `.lavra/` paths are relative to the project root. If you `cd` into a subdirectory during work, resolve the project root first:
+
+```bash
+PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")
+```
+
+Then prefix all `.lavra/` paths with `"$PROJECT_ROOT/"` when invoking them via Bash.
+
+</project_root>
 
 <process>
 
@@ -72,7 +84,8 @@ If there are uncommitted changes:
 Write `.lavra/memory/session-state.md` to preserve position awareness across context compaction:
 
 ```bash
-cat > .lavra/memory/session-state.md << EOF
+PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")
+cat > "$PROJECT_ROOT/.lavra/memory/session-state.md" << EOF
 # Session State
 ## Current Position
 - Bead(s): {active bead IDs}
