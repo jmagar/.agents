@@ -11,11 +11,11 @@ Quick map of Jacob's homelab. **Full inventory in `references/homelab.md` — re
 
 | Name | Role | LAN IP | OS | Notes |
 |---|---|---|---|---|
-| **tootie** | Primary NAS / app server | 10.1.0.2 | Unraid 7.2.4 (i7-13700K, 128GB) | ~65 containers. Web: `:6969`. SSH port `29229`. Also runs dookie as a KVM guest. **⚠ no parity disk currently.** |
-| **dookie** | Dev / AI / MCP hub | 10.1.0.6 | Debian (KVM guest on tootie, also direct LAN) | Axon RAG stack, synapse-mcp (3000), syslog-mcp (1514/3100), arcane-mcp (44332), unraid-mcp (6970). The Windows 11 sandbox container (dockur/windows) at `:8006` also lives here. |
-| **squirts** | Edge services | 10.1.0.8 | Ubuntu (4 cores, 15GB) | SWAG (128 vhosts), Authelia, AdGuard, Gotify, MCP gateway, Vaultwarden, Paperless, etc. **RAM 84% — tight.** |
-| **shart** | ZFS backup target | 169.254.80.235 (link-local — verify) | Unraid | ZFS `backup` pool 7.27TB / 23% used. Receives nightly Syncoid streams from tootie + squirts. |
-| **steamy** | GPU workloads (RTX 4070) | 10.1.0.65 | Win11 + WSL2 | `crawl4r-qdrant` (GPU qdrant). Hosts the user's actual desktop — `ssh steamy-wsl` is the default target for the `screenshots`, `clipboard`, `nircmd` skills. |
+| **tootie** | Primary NAS / app server | 10.1.0.2 | Unraid 7.2.4 (i7-13700K, 128GB) | 49 containers. Web: `:6969`. SSH port `29229`. Also runs dookie as a KVM guest. **⚠ no parity disk currently.** |
+| **dookie** | Dev / AI / MCP hub | 10.1.0.6 | Linux KVM guest on tootie | Axon RAG stack, syslog-mcp (1514/3100), arcane-mcp (44332), unraid-mcp (40010), Lab (8765), MCP bridge containers (40020-40060). The Windows 11 sandbox container (`agent-os-win11`) at `:8006` also lives here. |
+| **squirts** | Edge services | 10.1.0.8 | Ubuntu (4 cores, 15GB) | SWAG (149 active configs), Authelia, AdGuard, Gotify, MCP gateway, Vaultwarden, Paperless, etc. RAM sample 10GiB/14GiB used. |
+| **shart** | ZFS backup target | 10.1.0.3 | Unraid | ZFS `backup` pool 7.27TB / 1.80TB used. Also has old link-local `169.254.80.235` on `shim-br0`. Receives Syncoid streams from tootie + squirts. |
+| **steamy** | GPU workloads (RTX 4070) | 10.1.0.65 | Win11 + WSL2 | `crawl4r-qdrant` (GPU qdrant). Arcane marks this env disabled/offline, but `ssh steamy-wsl` works and remains the default target for the `screenshots`, `clipboard`, `nircmd` skills. |
 | **vivobook** | Mobile dev laptop | 10.1.0.5 (when docked) | Win11 + WSL2 | Just an `arcane-agent`. |
 
 All nodes joined to **Tailscale** mesh (`100.x.y.z`). Router is a UniFi UCG-Max ("The Mothership"). WiFi SSID `WillyNet`. Public services live at `*.tootie.tv` via SWAG.
@@ -25,13 +25,13 @@ All nodes joined to **Tailscale** mesh (`100.x.y.z`). Router is a UniFi UCG-Max 
 | If the user mentions… | It's on… |
 |---|---|
 | Plex, Sonarr, Radarr, Bazarr, Prowlarr, qBittorrent, Sabnzbd, Tautulli, Immich, Audiobookshelf, Kavita, Navidrome | tootie |
-| Axon, Qdrant (CPU), TEI/Qwen3-Embedding, Ollama, mem0, axon-postgres/redis/chrome, pulse_neo4j | dookie |
+| Axon runtime, Qdrant (CPU), TEI/Qwen3-Embedding, axon-chrome | dookie |
 | GPU qdrant (`crawl4r-qdrant`), anything with `gpu-nvidia` | steamy |
-| SWAG, Authelia, AdGuard, Gotify, Vaultwarden, Paperless, FreshRSS, Linkding, Karakeep, Memos, Radicale, Searxng, Dockge, Dozzle, multi-scrobbler/maloja, RustDesk | squirts |
+| SWAG, Authelia, AdGuard, Gotify, Vaultwarden, Paperless, Linkding, Karakeep, Bytestash, Memos, Radicale, Searxng, Dockge, Dozzle, multi-scrobbler/maloja, RustDesk | squirts |
 | Sanoid / Syncoid backups, ZFS receive | shart |
-| Portainer, Watchtower, Glances, Scrutiny, Vnstat, code-server, Firefox, Joplin, Bytestash, Open WebUI, Affine, Homebox, Homarr, Notifiarr, Infisical, Apprise, sshwifty, change-detection, Esphome, Syncthing | tootie |
-| **MCP servers** — synapse, syslog, arcane, unraid, swag, unifi, gotify, overseerr, plex, radarr, sonarr, prowlarr, sabnzbd, tautulli, qbittorrent, portainer, mcphub, mcp-context-forge | mostly **tootie + dookie + squirts** — see references/homelab.md §"MCP Server Ecosystem" for exact host |
-| Windows sandbox (dookie:8006 noVNC), winbox skill target | dookie (dockur/windows container) |
+| Portainer, Glances, Scrutiny, Vnstat, MinIO, Loggifly, Notifiarr, Apprise API, Olivetin, Crontab UI, Zipline | tootie |
+| **MCP servers** — syslog, arcane, unraid, swag, unifi, gotify, tailscale, apprise, rmcp-template/example | mostly **dookie + squirts** — see references/homelab.md §"MCP Server Ecosystem" for exact host |
+| Windows sandbox (dookie:8006 noVNC), winbox skill target | dookie (`agent-os-win11` / dockurr/windows container) |
 
 ## Conventions
 
@@ -47,7 +47,7 @@ Read `references/homelab.md` whenever you need:
 - Exact container lists per host
 - Storage layout (Unraid disk slots, ZFS pools, share-level breakdowns)
 - Backup chains (which datasets replicate where)
-- All 128 SWAG vhosts
+- All 149 active SWAG configs
 - Vulnerability scan numbers
 - Known issues / tech debt log
 - Specific port numbers beyond the headline ones above
@@ -56,6 +56,6 @@ Read `references/homelab.md` whenever you need:
 
 ## Updating this skill
 
-This map was seeded from a live MCP sweep on 2026-03-31. Treat container counts, RAM%, uptime numbers etc. as **point-in-time** — re-verify via `arcane-mcp` / `syslog` / `ssh <host> docker ps` before acting on anything that depends on current state. Names of nodes, IPs, roles, and architectural choices are stable.
+This map was seeded from a live MCP sweep on 2026-03-31 and refreshed with Arcane, SWAG, Syslog, and SSH checks on 2026-05-22. Treat container counts, RAM%, uptime numbers etc. as **point-in-time** — re-verify via `arcane-mcp` / `syslog` / `ssh <host> docker ps` before acting on anything that depends on current state. Names of nodes, roles, and architectural choices are stable; individual IPs and ports should still be verified before automation.
 
 If you notice the reference is stale in a load-bearing way (a service moved hosts, a node was added/renamed, a critical port changed), update `references/homelab.md` *and* this overview before the session ends.
