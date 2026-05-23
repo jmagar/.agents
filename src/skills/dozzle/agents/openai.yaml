@@ -1,4 +1,4 @@
 interface:
   display_name: "Dozzle"
-  short_description: "Lab's Dozzle integration — Real-time Docker container log viewer"
-  default_prompt: "Use $dozzle for lab's Dozzle integration — Real-time Docker container log viewer."
+  short_description: "Direct Dozzle API workflow for container logs"
+  default_prompt: "Use $dozzle to inspect Dozzle health, version, containers, logs, or session-cookie auth through the direct HTTP API."

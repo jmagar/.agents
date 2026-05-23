@@ -1,6 +1,6 @@
 # Dozzle
 
-Lab's Dozzle integration — Real-time Docker container log viewer. Use when the user wants to manage their Dozzle instance, or invokes `lab dozzle` / `mcp__lab__dozzle`. Calls the MCP tool first, falls back to the CLI if MCP is unavailable.
+Direct Dozzle API workflow for the real-time Docker container log viewer. Uses `DOZZLE_URL` and optional `DOZZLE_SESSION_COOKIE`; does not route through Lab MCP or `lab dozzle`.
 
 ## Usage
 
