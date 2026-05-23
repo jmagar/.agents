@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the WillyNet homelab reference from live host checks.
+"""Generate the WillyNet homelab report from live host checks.
 
 The script intentionally uses only stdlib Python plus non-interactive SSH so it
 can run outside an agent session. It avoids secrets and records collection
@@ -11,8 +11,6 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
-import os
-import shlex
 import subprocess
 import sys
 from dataclasses import dataclass, field
@@ -21,7 +19,8 @@ from typing import Iterable
 
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
-DEFAULT_OUTPUT = REPO_ROOT / "src/skills/homelab-map/references/homelab.md"
+DEFAULT_TEMPLATE = REPO_ROOT / "src/skills/homelab-map/references/homelab.md"
+DEFAULT_OUTPUT = Path.home() / ".homelab/homelab.md"
 
 
 @dataclass(frozen=True)
@@ -482,9 +481,18 @@ SWAG is expected on `squirts`. Active proxy config count is generated from `/mnt
 """
 
 
+def render_with_template(report_body: str, template_path: Path) -> str:
+    template = template_path.read_text()
+    placeholder = "{{generated_report}}"
+    if placeholder not in template:
+        raise ValueError(f"template must contain {placeholder}")
+    return template.replace(placeholder, report_body.rstrip() + "\n")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate the WillyNet homelab markdown report.")
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT, help=f"Output file. Default: {DEFAULT_OUTPUT}")
+    parser.add_argument("--template", type=Path, default=DEFAULT_TEMPLATE, help=f"Template file. Default: {DEFAULT_TEMPLATE}")
     parser.add_argument("--stdout", action="store_true", help="Print report instead of writing it.")
     parser.add_argument("--no-write", action="store_true", help="Collect and render, but do not write the output file.")
     return parser.parse_args()
@@ -494,7 +502,8 @@ def main() -> int:
     args = parse_args()
     snapshots = {spec.key: collect_host(spec) for spec in HOSTS}
     now = dt.datetime.now().astimezone()
-    report = render_report(snapshots, now)
+    report_body = render_report(snapshots, now)
+    report = render_with_template(report_body, args.template)
 
     if args.stdout:
         print(report)
