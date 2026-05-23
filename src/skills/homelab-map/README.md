@@ -27,7 +27,7 @@ The generator uses non-interactive SSH plus Docker/ZFS/Unraid/SWAG shell probes.
 
 Use `--output <path>` when you need a one-off report somewhere other than `~/.homelab/homelab.md`. Keep volatile generated output out of the repository.
 
-After writing artifacts, the generator starts or reuses a localhost viewer on `127.0.0.1:8787`. It then checks `tailscale status`; if Tailscale is installed and usable, it attempts to expose the viewer through Tailscale Serve on HTTPS port `8447`. Missing or unhealthy Tailscale does not fail report generation.
+After writing artifacts, the generator starts or reuses a localhost viewer on `127.0.0.1:40500`. It then checks `tailscale status`; if Tailscale is installed and usable, it attempts to expose the viewer through Tailscale Serve on HTTPS port `8447`. Missing or unhealthy Tailscale does not fail report generation.
 
 Disable serving for CI or one-off generation:
 

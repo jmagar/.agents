@@ -16,6 +16,7 @@ All notable changes to this skill are recorded here. Format roughly follows [Kee
 - Changed the generator default output to `~/.homelab/homelab.md` so volatile runtime snapshots do not dirty the repository.
 - Updated `SKILL.md` and `README.md` to distinguish the repo template from the generated runtime report artifacts.
 - Made Tailscale exposure optional and non-fatal; report generation no longer depends on tailnet serving.
+- Changed the default local viewer port from `8787` to `40500`.
 
 ## 2026-05-17
 
