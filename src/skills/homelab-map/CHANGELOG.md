@@ -7,11 +7,13 @@ All notable changes to this skill are recorded here. Format roughly follows [Kee
 ### Added
 - Added `scripts/generate-homelab-report.py` to generate `~/.homelab/homelab.md` from live SSH, Docker, ZFS, Unraid, and SWAG config checks.
 - Added a static report template at `references/homelab.md`.
+- Added generated `~/.homelab/homelab.json` structured inventory output.
+- Added generated `~/.homelab/index.html` browser viewer for the JSON inventory.
 
 ### Changed
 - Converted `references/homelab.md` from a manually maintained snapshot into a static report template.
 - Changed the generator default output to `~/.homelab/homelab.md` so volatile runtime snapshots do not dirty the repository.
-- Updated `SKILL.md` and `README.md` to distinguish the repo template from the generated runtime report.
+- Updated `SKILL.md` and `README.md` to distinguish the repo template from the generated runtime report artifacts.
 
 ## 2026-05-17
 

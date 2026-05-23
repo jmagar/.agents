@@ -1,11 +1,11 @@
 ---
 name: homelab-map
-description: 'This skill should be used whenever a prompt mentions any of Jacob''s named homelab hosts — **tootie, dookie, shart, squirts, steamy, steamy-wsl, vivobook, vivobook-wsl** — or the **WillyNet** LAN. It provides the authoritative map of which host runs which service, IPs, ports, SSH details, storage layout, backup chains, MCP server locations, and known issues. Example triggers: "what''s on dookie", "is plex running on tootie", "ssh into squirts", "where''s the qdrant container", "which box has the GPU", "check shart''s backup status", "the steamy box", "ssh steamy-wsl", "vivobook-wsl logs". Does NOT fire on generic "my homelab" / "my server" / "my NAS" prompts that don''t name a specific host. Runtime inventory is generated at `~/.homelab/homelab.md`; `references/homelab.md` is only the report template.'
+description: 'This skill should be used whenever a prompt mentions any of Jacob''s named homelab hosts — **tootie, dookie, shart, squirts, steamy, steamy-wsl, vivobook, vivobook-wsl** — or the **WillyNet** LAN. It provides the authoritative map of which host runs which service, IPs, ports, SSH details, storage layout, backup chains, MCP server locations, and known issues. Example triggers: "what''s on dookie", "is plex running on tootie", "ssh into squirts", "where''s the qdrant container", "which box has the GPU", "check shart''s backup status", "the steamy box", "ssh steamy-wsl", "vivobook-wsl logs". Does NOT fire on generic "my homelab" / "my server" / "my NAS" prompts that don''t name a specific host. Runtime inventory is generated at `~/.homelab/homelab.md` and `~/.homelab/homelab.json`; `references/homelab.md` is only the report template.'
 ---
 
 # homelab-map
 
-Quick map of Jacob's homelab. **Full runtime inventory lives at `~/.homelab/homelab.md` — read or regenerate that file the moment you need anything more specific than this overview.**
+Quick map of Jacob's homelab. **Full runtime inventory lives at `~/.homelab/homelab.md` and `~/.homelab/homelab.json` — read or regenerate those files the moment you need anything more specific than this overview.**
 
 ## Nodes at a glance
 
@@ -43,7 +43,7 @@ All nodes joined to **Tailscale** mesh (`100.x.y.z`). Router is a UniFi UCG-Max 
 
 ## When to read the reference doc
 
-Read `~/.homelab/homelab.md` whenever you need:
+Read `~/.homelab/homelab.md` or `~/.homelab/homelab.json` whenever you need:
 - Exact container lists per host
 - Storage layout (Unraid disk slots, ZFS pools, share-level breakdowns)
 - Backup chains (which datasets replicate where)
@@ -56,7 +56,7 @@ Read `~/.homelab/homelab.md` whenever you need:
 
 ## Updating this skill
 
-`~/.homelab/homelab.md` is generated from the template at `references/homelab.md`. Refresh it instead of hand-editing point-in-time data:
+`~/.homelab/homelab.md`, `~/.homelab/homelab.json`, and `~/.homelab/index.html` are generated from live collection plus the template at `references/homelab.md`. Refresh them instead of hand-editing point-in-time data:
 
 ```bash
 python3 src/skills/homelab-map/scripts/generate-homelab-report.py
@@ -64,4 +64,4 @@ python3 src/skills/homelab-map/scripts/generate-homelab-report.py
 
 The generator uses non-interactive SSH, Docker CLI, ZFS CLI, Unraid shell commands, and SWAG config files. Treat container counts, RAM%, uptime numbers etc. as **point-in-time** — re-run the generator before acting on anything that depends on current state. Names of nodes, roles, and architectural choices are stable; individual IPs and ports should still be verified before automation.
 
-If a stable architectural fact changes (node renamed, service permanently moved, critical port changed), update `scripts/generate-homelab-report.py` and/or the template in `references/homelab.md`, then regenerate `~/.homelab/homelab.md`. Keep this overview aligned with the generated report.
+If a stable architectural fact changes (node renamed, service permanently moved, critical port changed), update `scripts/generate-homelab-report.py` and/or the template in `references/homelab.md`, then regenerate `~/.homelab` artifacts. Keep this overview aligned with the generated report.

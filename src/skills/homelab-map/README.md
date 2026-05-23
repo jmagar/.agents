@@ -11,8 +11,10 @@ Any prompt naming one of the devices, or `WillyNet`. Strict device-name fidelity
 ## Files
 - `SKILL.md` — lean overview: nodes-at-a-glance table, service→host lookup, conventions
 - `references/homelab.md` — static report template containing the `{{generated_report}}` insertion marker
-- `scripts/generate-homelab-report.py` — pulls host/container/storage/proxy state and writes `~/.homelab/homelab.md`
-- `~/.homelab/homelab.md` — generated runtime inventory, read on demand
+- `scripts/generate-homelab-report.py` — pulls host/container/storage/proxy state and writes report artifacts under `~/.homelab`
+- `~/.homelab/homelab.md` — generated markdown runtime inventory, read on demand
+- `~/.homelab/homelab.json` — generated structured runtime inventory for tools and viewers
+- `~/.homelab/index.html` — generated browser viewer for the JSON inventory
 
 ## Updating
 Regenerate the external report instead of hand-maintaining runtime values:
@@ -24,3 +26,15 @@ python3 src/skills/homelab-map/scripts/generate-homelab-report.py
 The generator uses non-interactive SSH plus Docker/ZFS/Unraid/SWAG shell probes. Container counts, RAM%, uptime etc. are point-in-time; rerun before acting on anything current-state dependent.
 
 Use `--output <path>` when you need a one-off report somewhere other than `~/.homelab/homelab.md`. Keep volatile generated output out of the repository.
+
+Serve the generated viewer locally:
+
+```bash
+python3 -m http.server 8787 --bind 127.0.0.1 --directory ~/.homelab
+```
+
+Expose that local server to your tailnet:
+
+```bash
+tailscale serve --bg http://127.0.0.1:8787
+```

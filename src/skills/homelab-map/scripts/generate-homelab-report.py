@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import html
 import json
 import subprocess
 import sys
@@ -20,7 +21,10 @@ from typing import Iterable
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 DEFAULT_TEMPLATE = REPO_ROOT / "src/skills/homelab-map/references/homelab.md"
-DEFAULT_OUTPUT = Path.home() / ".homelab/homelab.md"
+DEFAULT_DIR = Path.home() / ".homelab"
+DEFAULT_OUTPUT = DEFAULT_DIR / "homelab.md"
+DEFAULT_JSON_OUTPUT = DEFAULT_DIR / "homelab.json"
+DEFAULT_HTML_OUTPUT = DEFAULT_DIR / "index.html"
 
 
 @dataclass(frozen=True)
@@ -287,6 +291,113 @@ def service_host_rows(snapshots: dict[str, HostSnapshot]) -> list[list[str]]:
     return rows
 
 
+def snapshot_to_dict(snapshot: HostSnapshot) -> dict[str, object]:
+    return {
+        "key": snapshot.spec.key,
+        "label": snapshot.spec.label,
+        "ssh_host": snapshot.spec.ssh_host,
+        "role": snapshot.spec.role,
+        "os_note": snapshot.spec.os_note,
+        "ssh_port": snapshot.spec.ssh_port,
+        "hostname": snapshot.hostname,
+        "kernel": snapshot.kernel,
+        "uptime": snapshot.uptime,
+        "memory": snapshot.memory,
+        "lan_ip": lan_ip(snapshot),
+        "tailscale_ip": snapshot.tailscale_ip,
+        "ipv4": snapshot.ipv4,
+        "containers": snapshot.containers,
+        "container_count": len(snapshot.containers),
+        "zpool": [
+            {
+                "name": (entry + [""] * 6)[0],
+                "size": (entry + [""] * 6)[1],
+                "allocated": (entry + [""] * 6)[2],
+                "free": (entry + [""] * 6)[3],
+                "fragmentation": (entry + [""] * 6)[4],
+                "health": (entry + [""] * 6)[5],
+            }
+            for entry in snapshot.zpool
+        ],
+        "df": snapshot.df,
+        "extras": snapshot.extras,
+        "errors": snapshot.errors,
+    }
+
+
+def report_payload(snapshots: dict[str, HostSnapshot], generated_at: dt.datetime) -> dict[str, object]:
+    swag_configs = snapshots["squirts"].extras.get("swag_configs", "")
+    swag_names = [line for line in swag_configs.splitlines() if line.strip()]
+    total_containers = sum(len(s.containers) for s in snapshots.values())
+
+    service_summary = []
+    for host, services in SERVICE_HINTS.items():
+        snapshot = snapshots[host]
+        observed = [service for service in services if has_container(snapshot, service)]
+        missing = [service for service in services if not has_container(snapshot, service)]
+        service_summary.append({
+            "host": snapshot.spec.key,
+            "label": snapshot.spec.label,
+            "observed": observed,
+            "missing": missing,
+        })
+
+    mcp_servers = []
+    for name, host, port in MCP_HINTS:
+        snapshot = snapshots[host]
+        container = find_container(snapshot, name)
+        mcp_servers.append({
+            "name": name,
+            "host": host,
+            "host_label": snapshot.spec.label,
+            "port": port,
+            "image": container["image"] if container else None,
+            "status": container["status"] if container else None,
+        })
+
+    collection_errors = [
+        {"host": snapshot.spec.key, "label": snapshot.spec.label, "error": error}
+        for snapshot in snapshots.values()
+        for error in snapshot.errors
+    ]
+
+    return {
+        "schema_version": 1,
+        "generated_at": generated_at.isoformat(),
+        "generated_at_display": generated_at.strftime("%Y-%m-%d %H:%M:%S %Z"),
+        "generator": "src/skills/homelab-map/scripts/generate-homelab-report.py",
+        "collection_method": "non-interactive SSH, Docker CLI, ZFS CLI, Unraid shell commands, and SWAG config files",
+        "network": "WillyNet / 10.1.0.0/24 plus Tailscale mesh",
+        "primary_public_domain": "*.tootie.tv via SWAG on squirts",
+        "overview": {
+            "total_nodes": len(snapshots),
+            "total_containers_running": total_containers,
+            "active_swag_proxy_configs": len(swag_names) if swag_names else None,
+        },
+        "nodes": [snapshot_to_dict(snapshots[key]) for key in ["tootie", "dookie", "squirts", "shart", "steamy", "vivobook"]],
+        "service_summary": service_summary,
+        "mcp_servers": mcp_servers,
+        "swag_proxy_configs": swag_names,
+        "collection_errors": collection_errors,
+        "known_follow_up_checks": [
+            "If tootie parity excerpt shows diskName.0= or diskSize.0=0, parity is not assigned.",
+            "If Arcane marks a host offline but SSH works, reconcile Arcane environment registration.",
+            "If an expected service appears under missing, check whether it moved, stopped, or changed container name.",
+            "Confirm backup freshness from Sanoid/Syncoid logs; this report does not prove backup success.",
+        ],
+        "key_urls": [
+            {"service": "Unraid Web UI", "url": "http://10.1.0.2:6969"},
+            {"service": "Syslog MCP", "url": "http://dookie:3100"},
+            {"service": "Arcane UI", "url": "https://arcane.tootie.tv"},
+            {"service": "Arcane MCP", "url": "http://dookie:44332"},
+            {"service": "Unraid MCP", "url": "http://dookie:40010"},
+            {"service": "Plex", "url": "http://10.1.0.2:32400"},
+            {"service": "Windows sandbox noVNC", "url": "http://dookie:8006"},
+            {"service": "Windows sandbox RDP", "url": "dookie:33890"},
+        ],
+    }
+
+
 def render_report(snapshots: dict[str, HostSnapshot], generated_at: dt.datetime) -> str:
     swag_configs = snapshots["squirts"].extras.get("swag_configs", "")
     swag_names = [line for line in swag_configs.splitlines() if line.strip()]
@@ -489,10 +600,219 @@ def render_with_template(report_body: str, template_path: Path) -> str:
     return template.replace(placeholder, report_body.rstrip() + "\n")
 
 
+def render_html_viewer(payload: dict[str, object]) -> str:
+    payload_json = json.dumps(payload, indent=2, sort_keys=True)
+    embedded_json = html.escape(payload_json)
+    script_json = payload_json.replace("</", "<\\/")
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WillyNet Homelab</title>
+  <style>
+    :root {{
+      color-scheme: light dark;
+      --bg: #f7f7f4;
+      --panel: #ffffff;
+      --text: #202124;
+      --muted: #626866;
+      --line: #d9ddd8;
+      --accent: #136f63;
+      --warn: #a15c00;
+      --bad: #9b1c31;
+    }}
+    @media (prefers-color-scheme: dark) {{
+      :root {{
+        --bg: #101412;
+        --panel: #171d1a;
+        --text: #eef1ed;
+        --muted: #a8b0ac;
+        --line: #2d3833;
+        --accent: #62c7b6;
+        --warn: #efb35c;
+        --bad: #ff7b8d;
+      }}
+    }}
+    * {{ box-sizing: border-box; }}
+    body {{
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }}
+    header {{
+      padding: 24px clamp(16px, 3vw, 36px) 16px;
+      border-bottom: 1px solid var(--line);
+    }}
+    main {{
+      padding: 20px clamp(16px, 3vw, 36px) 36px;
+      display: grid;
+      gap: 20px;
+    }}
+    h1, h2, h3 {{ margin: 0; line-height: 1.2; }}
+    h1 {{ font-size: 28px; }}
+    h2 {{ font-size: 19px; margin-bottom: 10px; }}
+    h3 {{ font-size: 15px; margin-bottom: 8px; }}
+    a {{ color: var(--accent); }}
+    .meta {{ color: var(--muted); margin-top: 6px; }}
+    .grid {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }}
+    .metric, section {{
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+    }}
+    .metric strong {{ display: block; font-size: 22px; }}
+    .metric span {{ color: var(--muted); }}
+    .table-wrap {{ overflow-x: auto; }}
+    table {{ width: 100%; border-collapse: collapse; min-width: 720px; }}
+    th, td {{ padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }}
+    th {{ color: var(--muted); font-weight: 600; }}
+    code, pre {{ font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; }}
+    pre {{
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      background: color-mix(in srgb, var(--panel) 80%, var(--bg));
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      max-height: 70vh;
+      overflow: auto;
+    }}
+    .pill {{
+      display: inline-block;
+      padding: 2px 7px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      margin: 2px;
+      color: var(--muted);
+      white-space: nowrap;
+    }}
+    .ok {{ color: var(--accent); }}
+    .warn {{ color: var(--warn); }}
+    .bad {{ color: var(--bad); }}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>WillyNet Homelab</h1>
+    <div class="meta">Generated <span id="generated"></span> from <code>homelab.json</code></div>
+  </header>
+  <main>
+    <div class="grid" id="metrics"></div>
+
+    <section>
+      <h2>Nodes</h2>
+      <div class="table-wrap"><table id="nodes"></table></div>
+    </section>
+
+    <section>
+      <h2>Service Summary</h2>
+      <div class="table-wrap"><table id="services"></table></div>
+    </section>
+
+    <section>
+      <h2>MCP Servers</h2>
+      <div class="table-wrap"><table id="mcp"></table></div>
+    </section>
+
+    <section>
+      <h2>Containers</h2>
+      <div id="containers"></div>
+    </section>
+
+    <section>
+      <h2>Raw JSON</h2>
+      <p class="meta"><a href="homelab.json">Open homelab.json</a></p>
+      <pre id="raw-json">{embedded_json}</pre>
+    </section>
+  </main>
+  <script type="application/json" id="homelab-data">{script_json}</script>
+  <script>
+    const data = JSON.parse(document.getElementById('homelab-data').textContent);
+    const text = (value) => value === null || value === undefined || value === '' ? '-' : String(value);
+    const esc = (value) => text(value).replace(/[&<>"']/g, (ch) => ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[ch]));
+    const table = (headers, rows) => {{
+      const head = '<thead><tr>' + headers.map((h) => `<th>${{esc(h)}}</th>`).join('') + '</tr></thead>';
+      const body = '<tbody>' + rows.map((row) => '<tr>' + row.map((c) => `<td>${{c}}</td>`).join('') + '</tr>').join('') + '</tbody>';
+      return head + body;
+    }};
+    const pills = (items, cls = '') => items.length ? items.map((item) => `<span class="pill ${{cls}}">${{esc(item)}}</span>`).join('') : '-';
+
+    document.getElementById('generated').textContent = data.generated_at_display || data.generated_at;
+    document.getElementById('metrics').innerHTML = [
+      ['Nodes', data.overview.total_nodes],
+      ['Running containers', data.overview.total_containers_running],
+      ['SWAG proxy configs', data.overview.active_swag_proxy_configs ?? 'not collected'],
+      ['Network', data.network],
+    ].map(([label, value]) => `<div class="metric"><strong>${{esc(value)}}</strong><span>${{esc(label)}}</span></div>`).join('');
+
+    document.getElementById('nodes').innerHTML = table(
+      ['Name', 'Role', 'LAN', 'Tailscale', 'OS', 'Kernel', 'Uptime', 'Memory', 'Containers'],
+      data.nodes.map((node) => [
+        esc(node.label),
+        esc(node.role),
+        esc(node.lan_ip || 'not observed'),
+        esc(node.tailscale_ip || 'not observed'),
+        esc(node.os_note),
+        esc(node.kernel || 'not observed'),
+        esc(node.uptime || 'not observed'),
+        esc(node.memory || 'not observed'),
+        esc(node.container_count),
+      ])
+    );
+
+    document.getElementById('services').innerHTML = table(
+      ['Host', 'Observed', 'Missing'],
+      data.service_summary.map((entry) => [
+        esc(entry.label),
+        pills(entry.observed, 'ok'),
+        pills(entry.missing, entry.missing.length ? 'warn' : ''),
+      ])
+    );
+
+    document.getElementById('mcp').innerHTML = table(
+      ['Server', 'Host', 'Port', 'Image', 'Status'],
+      data.mcp_servers.map((server) => [
+        esc(server.name),
+        esc(server.host_label),
+        esc(server.port),
+        esc(server.image || 'not observed'),
+        esc(server.status || 'not observed'),
+      ])
+    );
+
+    document.getElementById('containers').innerHTML = data.nodes.map((node) => `
+      <h3>${{esc(node.label)}} <span class="meta">(${{esc(node.container_count)}})</span></h3>
+      <div class="table-wrap"><table>${{table(
+        ['Name', 'Image', 'Ports', 'Status'],
+        node.containers.map((container) => [
+          esc(container.name),
+          esc(container.image),
+          esc(container.ports || '-'),
+          esc(container.status || '-'),
+        ])
+      )}}</table></div>
+    `).join('');
+  </script>
+</body>
+</html>
+"""
+
+
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate the WillyNet homelab markdown report.")
+    parser = argparse.ArgumentParser(description="Generate the WillyNet homelab report artifacts.")
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT, help=f"Output file. Default: {DEFAULT_OUTPUT}")
+    parser.add_argument("--json-output", type=Path, default=DEFAULT_JSON_OUTPUT, help=f"JSON output file. Default: {DEFAULT_JSON_OUTPUT}")
+    parser.add_argument("--html-output", type=Path, default=DEFAULT_HTML_OUTPUT, help=f"HTML viewer output file. Default: {DEFAULT_HTML_OUTPUT}")
     parser.add_argument("--template", type=Path, default=DEFAULT_TEMPLATE, help=f"Template file. Default: {DEFAULT_TEMPLATE}")
+    parser.add_argument("--no-json", action="store_true", help="Do not write the JSON artifact.")
+    parser.add_argument("--no-html", action="store_true", help="Do not write the HTML viewer artifact.")
     parser.add_argument("--stdout", action="store_true", help="Print report instead of writing it.")
     parser.add_argument("--no-write", action="store_true", help="Collect and render, but do not write the output file.")
     return parser.parse_args()
@@ -502,8 +822,11 @@ def main() -> int:
     args = parse_args()
     snapshots = {spec.key: collect_host(spec) for spec in HOSTS}
     now = dt.datetime.now().astimezone()
+    payload = report_payload(snapshots, now)
     report_body = render_report(snapshots, now)
     report = render_with_template(report_body, args.template)
+    json_report = json.dumps(payload, indent=2, sort_keys=True) + "\n"
+    html_report = render_html_viewer(payload)
 
     if args.stdout:
         print(report)
@@ -512,7 +835,19 @@ def main() -> int:
         output = args.output.resolve()
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(report)
-        print(output)
+        written = [output]
+        if not args.no_json:
+            json_output = args.json_output.resolve()
+            json_output.parent.mkdir(parents=True, exist_ok=True)
+            json_output.write_text(json_report)
+            written.append(json_output)
+        if not args.no_html:
+            html_output = args.html_output.resolve()
+            html_output.parent.mkdir(parents=True, exist_ok=True)
+            html_output.write_text(html_report)
+            written.append(html_output)
+        for path in written:
+            print(path)
     elif args.no_write:
         print("Rendered report without writing.", file=sys.stderr)
 
