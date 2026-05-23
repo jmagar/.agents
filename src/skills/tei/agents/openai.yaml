@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tei"
+  short_description: "Lab's Tei integration — HuggingFace Text Embeddings Inference..."
+  default_prompt: "Use $tei for lab's Tei integration — HuggingFace Text Embeddings Inference."

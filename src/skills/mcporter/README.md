@@ -28,7 +28,7 @@ Not for designing new MCP servers, writing server-side handlers, or generic API 
 ## Usage — smoke test
 
 ```bash
-cp ~/.agents/skills/mcporter/scripts/smoke.sh tests/mcp-smoke.sh
+cp ~/.agents/src/skills/mcporter/scripts/smoke.sh tests/mcp-smoke.sh
 # edit the TOOLS / RESOURCES arrays for the server under test
 ./tests/mcp-smoke.sh <server-name>
 ```

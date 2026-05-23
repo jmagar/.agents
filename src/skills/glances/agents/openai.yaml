@@ -1,0 +1,4 @@
+interface:
+  display_name: "Glances"
+  short_description: "Lab's Glances integration — Cross-platform system monitoring..."
+  default_prompt: "Use $glances for lab's Glances integration — Cross-platform system monitoring."

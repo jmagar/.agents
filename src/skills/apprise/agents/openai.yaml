@@ -1,0 +1,4 @@
+interface:
+  display_name: "Apprise"
+  short_description: "Lab's Apprise integration — universal notification dispatcher..."
+  default_prompt: "Use $apprise for lab's Apprise integration — universal notification dispatcher."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Linkding"
+  short_description: "Manage bookmarks with Linkding"
+  default_prompt: "Use $linkding to manage bookmarks with Linkding."

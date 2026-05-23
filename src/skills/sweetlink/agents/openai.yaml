@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sweetlink"
+  short_description: "Sweetlink, controlled Chrome sessions, browser automation..."
+  default_prompt: "Use $sweetlink for sweetlink, controlled Chrome sessions, browser automation."

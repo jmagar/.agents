@@ -1,0 +1,4 @@
+interface:
+  display_name: "Immich"
+  short_description: "Lab's Immich integration — Self-hosted photo and video..."
+  default_prompt: "Use $immich for lab's Immich integration — Self-hosted photo and video."

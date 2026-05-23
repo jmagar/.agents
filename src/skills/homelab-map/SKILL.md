@@ -31,7 +31,7 @@ All nodes joined to **Tailscale** mesh (`100.x.y.z`). Router is a UniFi UCG-Max 
 | Sanoid / Syncoid backups, ZFS receive | shart |
 | Portainer, Glances, Scrutiny, Vnstat, MinIO, Loggifly, Notifiarr, Apprise API, Olivetin, Crontab UI, Zipline | tootie |
 | **MCP servers** — syslog, arcane, unraid, swag, unifi, gotify, tailscale, apprise, rmcp-template/example | mostly **dookie + squirts** — see `~/.homelab/homelab.md` §"MCP Server Ecosystem" for exact host |
-| Windows sandbox (dookie:8006 noVNC), winbox skill target | dookie (`agent-os-win11` / dockurr/windows container) |
+| Windows sandbox (dookie:8006 noVNC), agent-os skill target | dookie (`agent-os-win11` / dockurr/windows container) |
 
 ## Conventions
 

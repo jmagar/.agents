@@ -1,0 +1,4 @@
+interface:
+  display_name: "Gotify"
+  short_description: "\"send notification\", \"notify me when done\", \"push..."
+  default_prompt: "Use $gotify for \"send notification\", \"notify me when done\", \"push."

@@ -8,7 +8,7 @@ description: Use whenever the user mentions Bitwarden — vault items, logins, p
 This skill covers two surfaces:
 
 1. **`mcp__bitwarden__*` tools** — the primary interface for vault, Send, and organization operations. Prefer these.
-2. **`bw` CLI** — used by the bundled `scripts/session` wrapper for unlock/lock/status, and as a fallback for anything the MCP server does not expose (e.g. `bw export`, `bw import`, `bw receive`, `bw serve`, `bw config`).
+2. **`bw` CLI** — used by the bundled session wrapper for unlock/lock/status, and as a fallback for anything the MCP server does not expose (e.g. `bw export`, `bw import`, `bw receive`, `bw serve`, `bw config`).
 
 Scope: this skill covers Bitwarden **Password Manager** (`bw` and `@bitwarden/mcp-server`). It does **not** cover Bitwarden **Secrets Manager** (`bws`, machine accounts, projects). If the user asks about `bws` or machine-account secrets, say so and stop.
 
@@ -19,11 +19,12 @@ Never store `BW_SESSION` in `.mcp.json`, `.env`, shell history, or committed fil
 The Bitwarden MCP server requires an unlocked CLI session. Manage it with:
 
 ```bash
-plugins/bitwarden/scripts/session unlock   # prompt for master password, write runtime token
-plugins/bitwarden/scripts/session ensure   # prompt only when token is missing or stale
-plugins/bitwarden/scripts/session status   # verify the saved token is still valid
-plugins/bitwarden/scripts/session lock     # invalidate token and remove runtime file
-plugins/bitwarden/scripts/session path     # print the runtime token path
+SKILL_DIR=/home/jmagar/.agents/src/skills/bitwarden
+"$SKILL_DIR/scripts/session" unlock   # prompt for master password, write runtime token
+"$SKILL_DIR/scripts/session" ensure   # prompt only when token is missing or stale
+"$SKILL_DIR/scripts/session" status   # verify the saved token is still valid
+"$SKILL_DIR/scripts/session" lock     # invalidate token and remove runtime file
+"$SKILL_DIR/scripts/session" path     # print the runtime token path
 ```
 
 Token path: `${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/bitwarden-mcp/session`.
@@ -33,7 +34,7 @@ If the MCP server fails to connect or any tool returns an auth error, run `scrip
 Install managed launch wrappers for `claude`, `codex`, and `gemini` with:
 
 ```bash
-plugins/bitwarden/scripts/install-shell-wrappers
+/home/jmagar/.agents/src/skills/bitwarden/scripts/install-shell-wrappers
 ```
 
 Use `--rc PATH` for custom shell files, such as Oh My Zsh custom alias files.
@@ -43,7 +44,7 @@ Use `--rc PATH` for custom shell files, such as Oh My Zsh custom alias files.
 Configure Claude Code to launch:
 
 ```bash
-plugins/bitwarden/bin/bitwarden-mcp
+/home/jmagar/.agents/src/skills/bitwarden/bin/bitwarden-mcp
 ```
 
 The wrapper reads the runtime session file, validates it with `bw unlock --check`, and starts the pinned `@bitwarden/mcp-server` package.
@@ -57,7 +58,7 @@ Use this decision order:
 3. **The operation is not exposed by the MCP server** (e.g. `bw export`, `bw import`, `bw receive`, `bw serve`, `bw config server`, `bw completion`, `bw update`, `bw sdk-version`) → call `bw` directly. The MCP wrapper exports `BW_SESSION` only into its own child process; it does not leak into your shell. To run `bw` directly, either install the launch wrappers (`scripts/install-shell-wrappers`) or export the session manually:
 
    ```bash
-   export BW_SESSION="$(<"$(plugins/bitwarden/scripts/session path)")"
+   export BW_SESSION="$(<"$(/home/jmagar/.agents/src/skills/bitwarden/scripts/session path)")"
    ```
 
 When in doubt, check `mcp__bitwarden__*` tool names first — the catalog below is exhaustive for the operations the server supports.

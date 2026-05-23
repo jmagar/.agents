@@ -13,7 +13,7 @@ Bridge for driving a Win11 desktop remotely from this SSH session via the NirCmd
 NIRCMD_HOST="${NIRCMD_HOST:-steamy-wsl}"                          # ssh alias
 NIRCMD_PATH="${NIRCMD_PATH:-/mnt/c/tools/nircmd/nircmd.exe}"      # POSIX path from WSL
 NIRSOFT_DIR="${NIRSOFT_DIR:-/mnt/c/tools/nirsoft}"                # NirSoft companion tools dir
-SKILL_DIR=/home/jmagar/.agents/skills/nircmd                      # hardcoded; SKILL.md isn't sourced as a real script
+SKILL_DIR=/home/jmagar/.agents/src/skills/nircmd                      # hardcoded; SKILL.md isn't sourced as a real script
 ```
 
 For persistence across sessions, set in `~/.claude/settings.json` under `env` (see `screenshots` skill for the pattern).
@@ -118,10 +118,10 @@ NirCmd can do destructive things. The skill enforces three tiers — see `refere
 
 ## Bundled scripts
 
-- `scripts/clip.sh <text|-stdin>` — push text to UTF-8-safe
-- `scripts/clip-grab.sh <out-path>` — pull current Win clipboard back as a local file
 - `scripts/win-shot.sh <title-substring> <out-path>` — activate a window by title, then capture it
 - `scripts/lock.sh` — lock the workstation
+
+Clipboard helpers live in the `clipboard` skill. Use that skill for push/pull clipboard work instead of adding clipboard wrappers here.
 
 ## References
 

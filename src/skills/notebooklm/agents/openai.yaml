@@ -1,0 +1,4 @@
+interface:
+  display_name: "Notebooklm"
+  short_description: "Explicitly mentions NotebookLM, `/notebooklm`, asks to create..."
+  default_prompt: "Use $notebooklm for explicitly mentions NotebookLM, `/notebooklm`, asks to create."

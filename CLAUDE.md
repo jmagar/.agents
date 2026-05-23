@@ -167,6 +167,8 @@ find ~/.claude/skills/ -maxdepth 1 -type l ! -exec test -e {} \; -print
 - **SKILL.md body ≤ ~3000 words.** Anything heftier (full reference docs, large config schemas, big tables) goes in `references/` and is loaded only when the agent needs it. Progressive disclosure is the rule.
 - **No `Read`ing other skills' `SKILL.md`.** If two skills need shared facts, either duplicate the fact or put it in this `CLAUDE.md`.
 - **Env-var defaults pattern.** Skills that talk to remote hosts use `${SKILL_HOST:-default-alias}`-style env vars and document persistence via `~/.claude/settings.json`'s `env` block (which Claude Code injects into every spawned shell).
+- **Validation gate.** After `SKILL.md` edits, run `validate-skill`; for whole-tree audits, combine `skills-ref validate` with local checks for missing `scripts/`/`references/`, stale symlinks, and frontmatter name/directory mismatches.
+- **Source paths.** Use `~/.agents/src/skills/<name>` in docs and examples. `~/.agents/skills` is stale.
 
 ## Host targets (the steamy / dookie / WillyNet bit)
 
@@ -175,7 +177,7 @@ Most skills here drive Jacob's homelab over SSH. The default ssh aliases and wha
 | Alias | Reaches | Default for which skills |
 |---|---|---|
 | `steamy-wsl` | Jacob's actual desktop — Win11 + WSL2 Ubuntu on the RTX 4070 box. **He works on this 99% of the time.** | `screenshots`, `clipboard`, `nircmd`, `chrome`, `sysinternals` |
-| `dookie` | Debian VM (running on tootie) — dev / AI / MCP hub. Hosts the dockur/windows sandbox container. | `winbox` (via `http://dookie:8006`), homelab-map MCP servers |
+| `dookie` | Debian VM (running on tootie) — dev / AI / MCP hub. Hosts the dockur/windows sandbox container. | `agent-os` Windows sandbox, homelab-map MCP servers |
 | `tootie` | Unraid NAS (i7-13700K, 128GB, port 29229 for ssh) — main app server | rclone, things touching `/mnt/user/*` |
 
 **Override at session time** via `~/.claude/settings.json`:
@@ -190,11 +192,12 @@ For the full host inventory (six devices, IPs, what runs where, MCP server map, 
 
 ## Known cross-skill quirks
 
-- **`agent-browser keyboard type` is a no-op against noVNC canvases.** Use the `winbox_type` per-char `press` loop. Documented in `winbox`.
+- **Browser tool priority for web-dev checks:** CDP on `agent-os`, then `agent-browser`, `claude-in-chrome` on `agent-os`, `agent-os` Windows-MCP, then `claude-in-chrome` on `steamy`.
+- **noVNC canvas typing is unreliable.** For the sandbox, prefer `agent-os` Windows-MCP `Type`/`Shell`; use noVNC only as a visual fallback.
 - **NirCmd `clipboard set` is ANSI / CP-1252 only** — emoji and CJK get mangled. The `clipboard` skill's `clip.sh` auto-routes Unicode through PowerShell's `Set-Clipboard` via a UTF-8 temp file.
-- **dockur/windows `\\host.lan\Data` SMB share is install-time only.** Once Windows finishes setup, the share disappears. Don't rely on it for ongoing file transfer to/from the winbox.
+- **dockur/windows `\\host.lan\Data` SMB share is install-time only.** Once Windows finishes setup, the share disappears. Don't rely on it for ongoing file transfer to/from `agent-os`.
 - **Chrome CDP only sees events after `Network.enable`/`Runtime.enable` were sent on the current connection.** History isn't replayed. The `chrome` skill's `cdp-call.ps1` is one-shot per call; for live event streams it needs extension.
-- **`agent-browser` is a global npm CLI** — `npm i -g agent-browser`, run `agent-browser skills get core` for its built-in usage guide. Referenced by the `winbox` and `chrome` skills.
+- **`agent-browser` is a global npm CLI** — `npm i -g agent-browser`, run `agent-browser skills get core` for its built-in usage guide. Referenced by the `agent-os`, `agent-browser`, and `chrome` skills.
 
 ## Working on this repo
 

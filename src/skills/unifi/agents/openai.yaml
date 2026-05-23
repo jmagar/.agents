@@ -1,0 +1,4 @@
+interface:
+  display_name: "Unifi"
+  short_description: "Their UniFi network — connected clients, who's on the WiFi..."
+  default_prompt: "Use $unifi for their UniFi network — connected clients, who's on the WiFi."

@@ -1,6 +1,6 @@
 ---
 name: mcporter
-description: Use mcporter (the MCP CLI) to discover, inspect, and call MCP servers from the shell, and to write repeatable scripts that exercise an MCP server's tools and resources for regression / smoke testing. Trigger when the user mentions mcporter, says "test an MCP server", "smoke-test these tools", "automate MCP testing", "call a tool from the shell", "list MCP tools", "exercise the gateway tools", or asks for a script that hits MCP endpoints. Not for designing new MCP servers, writing server-side handlers, or generic API testing unrelated to MCP.
+description: Use when the user mentions mcporter, says "test an MCP server", "smoke-test these tools", "automate MCP testing", "call a tool from the shell", "list MCP tools", "exercise the gateway tools", or asks for a script that hits MCP endpoints. Covers using mcporter to discover, inspect, and call MCP servers from the shell, and to write repeatable regression or smoke-test scripts. Not for designing new MCP servers, writing server-side handlers, or generic API testing unrelated to MCP.
 allowed-tools: Read, Write, Edit, Bash
 argument-hint: [server-name or http-url]
 ---

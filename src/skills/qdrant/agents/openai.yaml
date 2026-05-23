@@ -1,0 +1,4 @@
+interface:
+  display_name: "Qdrant"
+  short_description: "Lab's Qdrant integration — Vector database for semantic..."
+  default_prompt: "Use $qdrant for lab's Qdrant integration — Vector database for semantic."

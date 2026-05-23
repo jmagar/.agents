@@ -34,6 +34,9 @@ Capture the output. `skills-ref` will report any schema violations.
 
 Report all other `skills-ref` output as-is.
 
+If suppressing the known false positives leaves only an empty `Validation failed`
+header with no bullet details, treat `skills-ref` as "✓ No issues".
+
 ## Step 3 — Claude Code-specific checks
 
 Read `SKILL_DIR/SKILL.md` and check the following. Collect as WARN or FAIL:
@@ -45,13 +48,19 @@ Read `SKILL_DIR/SKILL.md` and check the following. Collect as WARN or FAIL:
 | Script references resolvable | Any `scripts/` path mentioned in the body exists on disk relative to SKILL_DIR | WARN |
 | Reference paths resolvable | Any `references/` path mentioned in the body exists on disk relative to SKILL_DIR | WARN |
 | `disable-model-invocation` type | If present, value must be `true` or `false` | FAIL |
-| No raw secrets | Body contains no patterns like `sk-`, `ghp_`, `xoxb-`, `AIza`, `Bearer ` literals | FAIL |
+| No raw secrets | Body contains no concrete-looking credentials; examples of secret prefixes are OK only inside this validator skill | FAIL |
 | `name` matches directory | Frontmatter `name:` value equals `SKILL_NAME` (the last path component of SKILL_DIR) | WARN |
 | Description length | `description` is between 40 and 1024 characters | WARN |
 
 ## Step 4 — Plugin registration check
 
 Walk up from `SKILL_DIR` looking for a `plugin.json` (max 5 levels). If found, check whether `SKILL_NAME` appears in the `skills` array. WARN if the skill is not listed.
+
+## Path and secret matching details
+
+- For `scripts/` and `references/` checks, strip any Markdown anchor before testing the path. For example, validate `references/<topic>.md#section` by checking only `references/<topic>.md`.
+- Ignore wildcard/example paths such as `references/*.md`, `scripts/<name>.sh`, or project-local examples that do not claim to be bundled with the skill.
+- Do not flag descriptive text such as "Bearer token" or "API key". Flag concrete values or value-shaped examples that could be copied into logs, such as `Bearer <long-token>`, `sk-...`, `ghp_...`, `xoxb-...`, or `AIza...`.
 
 ## Step 5 — Report
 

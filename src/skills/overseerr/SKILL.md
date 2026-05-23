@@ -171,17 +171,3 @@ OVERSEERR_URL="http://server2:5055" OVERSEERR_API_KEY="key2" node scripts/search
 - [Overseerr GitHub](https://github.com/sct/overseerr)
 
 ---
-
-## 🔧 Agent Tool Usage Requirements
-
-**CRITICAL:** When invoking scripts from this skill via the zsh-tool, **ALWAYS use `pty: true`**.
-
-Without PTY mode, command output will not be visible even though commands execute successfully.
-
-**Correct invocation pattern:**
-```typescript
-<invoke name="mcp__plugin_zsh-tool_zsh-tool__zsh">
-<parameter name="command">./skills/SKILL_NAME/scripts/SCRIPT.sh [args]</parameter>
-<parameter name="pty">true</parameter>
-</invoke>
-```

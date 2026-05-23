@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tailscale"
+  short_description: "Managing Tailscale mesh VPN networks"
+  default_prompt: "Use $tailscale for managing Tailscale mesh VPN networks."

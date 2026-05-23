@@ -17,7 +17,7 @@ description: This skill should be used when managing Tailscale mesh VPN networks
 
 ## Purpose
 
-Hybrid skill using both the Tailscale CLI (local machine operations) and the Tailscale API (tailnet-wide management). **Read-Write (Safe)** — no destructive operations; writes include creating auth keys and toggling network features.
+Hybrid skill using both the Tailscale CLI (local machine operations) and the Tailscale API (tailnet-wide management). Read-only diagnostics are safe to run. Any operation that changes routing, exposure, authentication, device membership, DNS, SSH, or ACL state needs an explicit user instruction, and the highest-risk actions below require confirmation before execution.
 
 | Operation type | Method | Requires API key |
 |----------------|--------|-----------------|
@@ -25,6 +25,24 @@ Hybrid skill using both the Tailscale CLI (local machine operations) and the Tai
 | Serve, funnel, file transfer, SSH | CLI | No |
 | List all devices, user mgmt, DNS | API | Yes |
 | Create/revoke auth keys | API | Yes |
+
+## Safety boundaries
+
+Auto-allowed:
+
+- `tailscale status`, `netcheck`, `ip`, `whois`, `ping`
+- listing devices, routes, auth keys, DNS settings, ACLs, serve/funnel status
+
+Requires explicit user instruction:
+
+- `tailscale serve`, Taildrop file send/receive, exit-node selection
+- device authorization, device tag changes, route approvals
+
+Confirm immediately before execution:
+
+- `tailscale funnel` or any other public internet exposure
+- `tailscale down`, `tailscale up` when it changes SSH, exit-node, routes, or advertised services
+- device deletion, key creation/revocation, DNS/MagicDNS changes, ACL writes, enabling Tailscale SSH
 
 ## Setup
 
@@ -215,17 +233,3 @@ tailscale ping my-server
 ```
 
 ---
-
-## 🔧 Agent Tool Usage Requirements
-
-**CRITICAL:** When invoking scripts from this skill via the zsh-tool, **ALWAYS use `pty: true`**.
-
-Without PTY mode, command output will not be visible even though commands execute successfully.
-
-**Correct invocation pattern:**
-```typescript
-<invoke name="mcp__plugin_zsh-tool_zsh-tool__zsh">
-<parameter name="command">./skills/SKILL_NAME/scripts/SCRIPT.sh [args]</parameter>
-<parameter name="pty">true</parameter>
-</invoke>
-```

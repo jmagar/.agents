@@ -15,7 +15,7 @@ REMOTE_DIR="${SCREENS_REMOTE_DIR:-/mnt/c/screens}"                              
 NATIVE_DIR="${SCREENS_NATIVE_DIR:-C:\\screens}"                                     # same dir in native OS form (Windows only)
 POWERSHELL="${SCREENS_POWERSHELL:-/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe}"
 SHAREX="${SCREENS_SHAREX:-/mnt/c/Program Files/ShareX/ShareX.exe}"                  # ShareX CLI path
-SKILL_DIR=/home/jmagar/.agents/skills/screenshots
+SKILL_DIR=/home/jmagar/.agents/src/skills/screenshots
 ```
 
 Variable names match the prior `ss` skill so existing `~/.claude/settings.json` entries keep working. Paste this block at the top of any snippet. If the user mentions a different machine ("check my mac", "look at the work laptop"), set the matching `SCREENS_*` env vars for the session.
@@ -80,7 +80,7 @@ shot FullScreen       # all monitors
 ```
 
 **Configuring ShareX for unattended use** (run once on a fresh install):
-1. Open ShareX once via noVNC / desktop (`winbox` skill helps for the sandbox host).
+1. Open ShareX once via noVNC / desktop (`agent-os` skill helps for the sandbox host).
 2. Settings → Image → After capture tasks: disable "Copy image to clipboard" (optional but cleaner).
 3. Settings → Paths → Custom Screenshots folder path: set to whatever's in `$REMOTE_DIR` if you want everything in one place — otherwise the default `Documents\ShareX\Screenshots\<yyyy-MM>` is fine.
 4. Settings → Advanced → DisableHotkeys: true (don't fight the user's keybinds).
@@ -114,7 +114,7 @@ This skill does **not** screenshot Chrome tabs anymore — that moved to the `ch
 ```bash
 # (see chrome skill for setup) — one-liner equivalent of "grab the github tab"
 # Stage cdp-shot.ps1 once, then capture by tab title/URL substring — see chrome skill for full setup.
-/home/jmagar/.agents/skills/chrome/scripts/cdp-shot.ps1 -Pattern 'github.com' ...
+/home/jmagar/.agents/src/skills/chrome/scripts/cdp-shot.ps1 -Pattern 'github.com' ...
 ```
 
 ## Adapting to another machine

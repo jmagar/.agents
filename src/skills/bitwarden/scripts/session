@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+session_file="${BW_SESSION_FILE:-${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/bitwarden-mcp/session}"
+
+usage() {
+  cat <<'EOF'
+Usage: session unlock|ensure|status|lock|path
+
+Manages the Bitwarden CLI session token used by the Bitwarden MCP wrapper.
+EOF
+}
+
+ensure_parent() {
+  mkdir -p "$(dirname "$session_file")"
+  chmod 700 "$(dirname "$session_file")"
+}
+
+check_saved() {
+  [[ -r "$session_file" ]] || return 1
+  BW_SESSION="$(<"$session_file")" bw unlock --check >/dev/null 2>&1
+}
+
+case "${1:-}" in
+  unlock)
+    command -v bw >/dev/null 2>&1 || { echo "Bitwarden CLI 'bw' is not installed" >&2; exit 1; }
+    ensure_parent
+    bw unlock --raw > "$session_file"
+    chmod 600 "$session_file"
+    ;;
+  ensure)
+    if ! check_saved; then
+      "$0" unlock
+    fi
+    ;;
+  status)
+    command -v bw >/dev/null 2>&1 || { echo "Bitwarden CLI 'bw' is not installed" >&2; exit 1; }
+    if check_saved; then
+      echo "Bitwarden MCP session is valid: $session_file"
+    else
+      echo "Bitwarden MCP session is missing or stale: $session_file" >&2
+      exit 1
+    fi
+    ;;
+  lock)
+    if [[ -r "$session_file" ]]; then
+      BW_SESSION="$(<"$session_file")" bw lock >/dev/null 2>&1 || true
+    else
+      bw lock >/dev/null 2>&1 || true
+    fi
+    rm -f "$session_file"
+    ;;
+  path)
+    printf '%s\n' "$session_file"
+    ;;
+  -h|--help|help)
+    usage
+    ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac

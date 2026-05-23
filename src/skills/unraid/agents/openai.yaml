@@ -1,0 +1,4 @@
+interface:
+  display_name: "Unraid"
+  short_description: "Unraid, asks to check server health, monitor array or disk..."
+  default_prompt: "Use $unraid for unraid, asks to check server health, monitor array or disk."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Neo4j"
+  short_description: "Lab's Neo4J integration — Graph database — nodes..."
+  default_prompt: "Use $neo4j for lab's Neo4J integration — Graph database — nodes."

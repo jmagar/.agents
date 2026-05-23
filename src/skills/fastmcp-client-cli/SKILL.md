@@ -1,26 +1,27 @@
 ---
 name: "fastmcp-client-cli"
 description: "Query MCP servers from the shell using fastmcp discover, list, and call. Use when you need to discover configured servers, list tools/resources/prompts, call tools, read resources, get prompts, or bridge MCP servers into shell-based workflows."
-doc_type: "skill"
-status: "active"
-owner: "fastmcp-client-cli"
-audience:
-  - "agents"
-  - "maintainers"
-scope: "v0"
-source_of_truth: false
-upstream_refs:
-  - "docs/references/fastmcp/docs/client.mdx"
-  - "docs/references/fastmcp/docs/overview.mdx"
-  - "docs/references/fastmcp/docs/running.mdx"
-  - "docs/references/fastmcp/repos/prefecthq-fastmcp.xml"
-related: []
-last_reviewed: "2026-05-13"
-last_modified: "2026-05-13"
-modified_on_branch: "main"
-modified_at_version: "0.1.0"
-modified_at_commit: "unborn"
-review_basis: "cross-referenced against local docs/references snapshot"
+metadata:
+  doc_type: "skill"
+  status: "active"
+  owner: "fastmcp-client-cli"
+  audience:
+    - "agents"
+    - "maintainers"
+  scope: "v0"
+  source_of_truth: false
+  upstream_refs:
+    - "docs/references/fastmcp/docs/client.mdx"
+    - "docs/references/fastmcp/docs/overview.mdx"
+    - "docs/references/fastmcp/docs/running.mdx"
+    - "docs/references/fastmcp/repos/prefecthq-fastmcp.xml"
+  related: []
+  last_reviewed: "2026-05-13"
+  last_modified: "2026-05-13"
+  modified_on_branch: "main"
+  modified_at_version: "0.1.0"
+  modified_at_commit: "unborn"
+  review_basis: "cross-referenced against local docs/references snapshot"
 ---
 
 # FastMCP CLI: List and Call

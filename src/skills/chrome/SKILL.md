@@ -1,11 +1,23 @@
 ---
 name: chrome
-description: 'This skill should be used when the user wants to inspect or control the real Chrome session running on their remote host (typically their Win11 desktop) over SSH via the Chrome DevTools Protocol. Triggers imply *the user''s actual Chrome*: "grab my chrome tab", "show me my tabs", "screenshot my <site> tab", "what''s open in my chrome", "eval this in my browser", "cookies from my chrome", "navigate my chrome to", "what''s the page console showing", "check my chrome network requests". Not for spawning a fresh headless browser (use agent-browser) and not for full-desktop pixel captures (use screenshots). Requires a Chrome on the remote host launched with `--remote-debugging-port=9222`.'
+description: 'Use when the user wants to inspect or control a real Chrome session over SSH via Chrome DevTools Protocol. For web-dev/browser verification, prefer this ladder: CDP on agent-os, agent-browser, claude-in-chrome on agent-os, agent-os Windows-MCP, then claude-in-chrome on steamy. Triggers imply a real Chrome session: "grab my chrome tab", "show me my tabs", "screenshot my <site> tab", "what''s open in my chrome", "eval this in my browser", "cookies from my chrome", "navigate my chrome to", "what''s the page console showing", "check my chrome network requests". For the user''s personal Chrome on steamy, require Chrome launched with `--remote-debugging-port=9222`; for generic automation, fall back instead of stopping.'
 ---
 
 # chrome
 
 Talk to a real, running Chrome instance on a remote machine via CDP (Chrome DevTools Protocol). The remote Chrome must be launched with `--remote-debugging-port=<PORT>`. Everything in this skill is one SSH-hop away and stays on the user's machine — no data leaves their box except the response payload you fetch back.
+
+## Preferred web-dev tool priority
+
+For web development, browser verification, screenshots, and interactive page checks, use this order unless the user explicitly asks for a specific machine or browser session:
+
+1. **CDP running on agent-os** - best first choice when the agent-os Chrome debug endpoint is available.
+2. **agent-browser** - best fallback for fresh automation, screenshots, form flows, and ref-based browser testing.
+3. **claude-in-chrome on agent-os** - use when the workflow specifically needs the Claude-in-Chrome path on the sandbox VM.
+4. **agent-os Windows-MCP** - use for OS-level control, desktop apps, PowerShell, or browser tasks that cannot be handled cleanly through CDP/agent-browser.
+5. **claude-in-chrome on steamy** - last choice for the user's personal desktop/session.
+
+If a higher-priority surface is unavailable, record the observed failure briefly and move to the next option. Only stop for user action when the task specifically requires the user's personal Chrome session and steamy CDP is down.
 
 ## Defaults (override via env vars)
 
@@ -15,7 +27,7 @@ CHROME_PORT="${CHROME_PORT:-9222}"
 POWERSHELL="${CHROME_POWERSHELL:-/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe}"
 REMOTE_DIR="${CHROME_REMOTE_DIR:-/mnt/c/screens}"
 NATIVE_DIR="${CHROME_NATIVE_DIR:-C:\\screens}"
-SKILL_DIR=/home/jmagar/.agents/skills/chrome
+SKILL_DIR=/home/jmagar/.agents/src/skills/chrome
 ```
 
 The host needs a Chrome started like:
@@ -30,7 +42,13 @@ On the default host there's a "Chrome (debug)" desktop shortcut wired to this. I
 ssh "$SSH_TARGET" "$POWERSHELL -NoProfile -Command \"try { Invoke-RestMethod -Uri http://127.0.0.1:$CHROME_PORT/json/version -TimeoutSec 3 | Select-Object Browser,'User-Agent' } catch { 'CDP_DOWN' }\""
 ```
 
-If you see `CDP_DOWN`, stop and ask the user to start the debug Chrome. Everything below assumes the endpoint is live.
+If you see `CDP_DOWN`, follow the web-dev priority ladder:
+
+- For generic web-dev verification, screenshots, and automation, fall back to `agent-browser`.
+- For sandbox-specific browser or desktop work, use `agent-os` through CDP if possible, then `claude-in-chrome` on agent-os, then Windows-MCP.
+- For explicit "my Chrome", "my tabs", cookies, or steamy personal-session tasks, ask the user to start the debug Chrome and open the target page in that window.
+
+Everything below assumes the selected CDP endpoint is live.
 
 ## List tabs
 
@@ -127,7 +145,7 @@ cdp github 'Network.getResponseBody' '{"requestId":"..."}'   # need the requestI
 ```bash
 cdp '' 'Network.getCookies' '{}' | jq '.result.cookies[] | {name, domain, value: (.value[0:20])}'
 # Storage.getCookies is browser-context scoped; pass a browserContextId to target incognito.
-cdp '' 'Storage.getCookies' '{}' | jq '.result.cookies | length' 
+cdp '' 'Storage.getCookies' '{}' | jq '.result.cookies | length'
 ```
 
 ## Navigate / reload / close
@@ -186,5 +204,5 @@ The script opens one WebSocket, sends `{"id":1, method, params}`, then **loops p
 - **CDP target scopes**: tab (page) vs browser. `cdp-call.ps1 -Browser` switches. Some methods (Browser.*, Target.*) only work on the browser endpoint.
 - **One call per ws connection** in `cdp-call.ps1`. That's fine for ad-hoc work; for streams (Network/Page events), you need a long-lived connection — extend the script if needed.
 - **Headless Chrome on the same port**: doesn't conflict, but you'll get *both* sets of tabs in `/json`. Filter by `-Pattern`.
-- **agent-browser is not this skill**: agent-browser spawns its own Chromium locally for automation. This skill talks to the user's real Chrome on a remote host — for reading their actual session, screenshotting tabs they have open, etc. Use the right tool.
+- **agent-browser fallback**: agent-browser spawns its own Chromium locally for automation. Prefer it when the task does not need an existing real Chrome profile/session, especially after CDP is unavailable.
 - **Sister skill `screenshots`** handles full-desktop captures (which CDP can't see). Use `chrome_shot` when you want a specific tab; use `screenshots` Mode 2 when you want the whole monitor.

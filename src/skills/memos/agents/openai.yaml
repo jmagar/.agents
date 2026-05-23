@@ -1,0 +1,4 @@
+interface:
+  display_name: "Memos"
+  short_description: "Manage notes and memos in self-hosted Memos service"
+  default_prompt: "Use $memos to manage notes and memos in self-hosted Memos service."

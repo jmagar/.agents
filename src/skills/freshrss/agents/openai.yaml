@@ -1,0 +1,4 @@
+interface:
+  display_name: "Freshrss"
+  short_description: "Lab's Freshrss integration — Self-hosted RSS feed aggregator"
+  default_prompt: "Use $freshrss for lab's Freshrss integration — Self-hosted RSS feed aggregator."

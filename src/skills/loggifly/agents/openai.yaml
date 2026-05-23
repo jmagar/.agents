@@ -1,0 +1,4 @@
+interface:
+  display_name: "Loggifly"
+  short_description: "Lab's Loggifly integration — Docker container log alerting..."
+  default_prompt: "Use $loggifly for lab's Loggifly integration — Docker container log alerting."

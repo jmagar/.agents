@@ -1,4 +1,4 @@
 interface:
-  display_name: "Check Skill CLIs"
-  short_description: "Audit skill CLI availability"
-  default_prompt: "Use $check-skill-clis to audit CLI dependencies across Claude, Codex, and Copilot skills."
+  display_name: "Aurora Design System"
+  short_description: "Building, modifying, or styling React/Next"
+  default_prompt: "Use $aurora-design-system for building, modifying, or styling React/Next."

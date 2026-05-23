@@ -57,7 +57,7 @@ RADICALE_PASSWORD="your-password"
 For convenience, you can make the script executable:
 
 ```bash
-chmod +x ~/claude-homelab/skills/radicale/scripts/radicale-api.py
+chmod +x /home/jmagar/.agents/src/skills/radicale/scripts/radicale-api.py
 ```
 
 Now you can run it as:

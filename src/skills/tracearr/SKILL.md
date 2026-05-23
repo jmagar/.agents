@@ -29,6 +29,21 @@ library metrics, trust scores, and account-sharing signals.
 - Use Tracearr's read-only public REST API once an API key is generated in
   settings; Swagger UI is available at `/api-docs`.
 
+## Workflow
+
+1. Identify the Tracearr URL, deployment mode, and whether an API key is
+   available. If not, use container logs and the web UI as the fallback surface.
+2. For active-stream or sharing investigations, collect the account, server,
+   session id, device/client, IP/geolocation, timestamp range, and rule that
+   triggered the signal before drawing conclusions.
+3. For imports from Tautulli or Jellystat, confirm source URL, token, history
+   range, and duplicate-handling expectations before starting an import.
+4. For alert changes, verify destination, trigger threshold, and test-delivery
+   behavior. Do not silently enable noisy account-sharing alerts.
+5. For deployment failures, inspect app logs, PostgreSQL/TimescaleDB reachability,
+   Redis reachability, environment variables, migrations, and reverse-proxy base
+   path settings.
+
 ## Configuration Notes
 
 - Required runtime services: TimescaleDB/PostgreSQL and Redis.
@@ -43,6 +58,8 @@ library metrics, trust scores, and account-sharing signals.
 
 ## Fallbacks
 
-This plugin is currently scaffolded without an MCP server. Prefer a future
-Tracearr MCP tool when available. Until then, use Tracearr's public API for
-read-only integrations and Docker/log inspection for operational diagnostics.
+Prefer a Tracearr MCP tool if one is available in the active environment. When
+there is no MCP server, use Tracearr's public API for read-only integrations and
+Docker/log inspection for operational diagnostics. For writes, state the exact
+UI or API operation and confirm the affected server, user, rule, or import
+before changing it.

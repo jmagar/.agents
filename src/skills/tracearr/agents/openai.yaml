@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tracearr"
+  short_description: "Working with Tracearr media-server monitoring for Plex..."
+  default_prompt: "Use $tracearr for working with Tracearr media-server monitoring for Plex."

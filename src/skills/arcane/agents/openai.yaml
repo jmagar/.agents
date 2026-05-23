@@ -1,0 +1,4 @@
+interface:
+  display_name: "Arcane"
+  short_description: "Manage Docker containers, images, volumes, networks, stacks..."
+  default_prompt: "Use $arcane to manage Docker containers, images, volumes, networks, stacks."

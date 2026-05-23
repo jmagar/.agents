@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pihole"
+  short_description: "Lab's Pihole integration — Network-wide DNS ad blocking"
+  default_prompt: "Use $pihole for lab's Pihole integration — Network-wide DNS ad blocking."

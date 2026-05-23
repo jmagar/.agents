@@ -7,7 +7,7 @@ ARCHIVE_DIR="$ROOT_DIR/docs/references/archive/changes-reports"
 
 usage() {
   cat <<'EOF'
-Usage: .agents/skills/refresh-docs/scripts/archive-changes-report.sh
+Usage: .agents/src/skills/refresh-docs/scripts/archive-changes-report.sh
 
 Archive docs/references/CHANGES-REPORT.md to docs/references/archive/changes-reports.
 EOF

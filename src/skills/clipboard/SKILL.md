@@ -1,6 +1,6 @@
 ---
 name: clipboard
-description: This skill should be used when the user wants to push text to or read text from their Windows clipboard over SSH. The killer use case is "copy this to my clipboard" — the agent can't paste images into chat over SSH, but it can shove URLs, commands, code snippets, multi-line text, Unicode, or anything else onto the user's Windows clipboard for Ctrl+V wherever they want it. Triggers include "copy this to my clipboard", "put X on my clipboard", "push this to clipboard", "set my clipboard to", "what's on my clipboard", "read my clipboard", "clipboard contents". Always targets `ssh steamy-wsl` (Jacob's primary Win11 desktop, where he works 99% of the time) — invoke this skill regardless of what host this Claude session is running on. Auto-routes between NirCmd (fast ASCII) and PowerShell `Set-Clipboard` via a UTF-8 temp file (lossless Unicode); degrades gracefully when NirCmd is absent.
+description: Use when the user wants to push text to or read text from their Windows clipboard over SSH. The killer use case is "copy this to my clipboard" — the agent can't paste images into chat over SSH, but it can shove URLs, commands, code snippets, multi-line text, Unicode, or anything else onto the user's Windows clipboard for Ctrl+V wherever they want it. Triggers include "copy this to my clipboard", "put X on my clipboard", "push this to clipboard", "set my clipboard to", "what's on my clipboard", "read my clipboard", "clipboard contents". Always targets `ssh steamy-wsl` (Jacob's primary Win11 desktop, where he works 99% of the time) — invoke this skill regardless of what host this Claude session is running on. Auto-routes between NirCmd (fast ASCII) and PowerShell `Set-Clipboard` via a UTF-8 temp file (lossless Unicode); degrades gracefully when NirCmd is absent.
 ---
 
 # clipboard
@@ -19,7 +19,7 @@ CLIPBOARD_HOST="${CLIPBOARD_HOST:-${NIRCMD_HOST:-steamy-wsl}}"
 CLIPBOARD_NIRCMD="${CLIPBOARD_NIRCMD:-${NIRCMD_PATH:-/mnt/c/tools/nircmd/nircmd.exe}}"
 CLIPBOARD_POWERSHELL="${CLIPBOARD_POWERSHELL:-/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe}"
 CLIPBOARD_TMP_DIR="${CLIPBOARD_TMP_DIR:-/mnt/c/Users/Docker/AppData/Local/Temp}"
-SKILL_DIR=/home/jmagar/.agents/skills/clipboard
+SKILL_DIR=/home/jmagar/.agents/src/skills/clipboard
 ```
 
 The defaults fall through to `nircmd`'s env vars so a user who set `NIRCMD_HOST` for that skill doesn't have to set anything twice.

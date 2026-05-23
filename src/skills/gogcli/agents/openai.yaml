@@ -1,0 +1,4 @@
+interface:
+  display_name: "Gogcli"
+  short_description: "\"automate gmail\", \"export calendar events\", \"google drive..."
+  default_prompt: "Use $gogcli for \"automate gmail\", \"export calendar events\", \"google drive."
