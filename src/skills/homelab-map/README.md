@@ -27,7 +27,7 @@ The generator uses non-interactive SSH plus Docker/ZFS/Unraid/SWAG shell probes.
 
 Use `--output <path>` when you need a one-off report somewhere other than `~/.homelab/homelab.md`. Keep volatile generated output out of the repository.
 
-After writing artifacts, the generator starts or reuses a localhost viewer on `127.0.0.1:40500`. It then checks `tailscale status`; if Tailscale is installed and usable, it attempts to expose the viewer through Tailscale Serve on HTTPS port `8447`. Missing or unhealthy Tailscale does not fail report generation.
+After writing artifacts, the generator starts or reuses a viewer on `0.0.0.0:40500` so SWAG can reach it through dookie's Tailscale IP. It then checks `tailscale status`; if Tailscale is installed and usable, it attempts to expose the viewer through Tailscale Serve on HTTPS port `8447`. Missing or unhealthy Tailscale does not fail report generation.
 
 Disable serving for CI or one-off generation:
 
@@ -38,5 +38,5 @@ python3 src/skills/homelab-map/scripts/generate-homelab-report.py --no-serve
 Override ports:
 
 ```bash
-python3 src/skills/homelab-map/scripts/generate-homelab-report.py --serve-port 8788 --tailscale-https-port 8448
+python3 src/skills/homelab-map/scripts/generate-homelab-report.py --serve-bind 127.0.0.1 --serve-port 40501 --tailscale-https-port 8448
 ```

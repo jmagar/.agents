@@ -28,6 +28,7 @@ DEFAULT_DIR = Path.home() / ".homelab"
 DEFAULT_OUTPUT = DEFAULT_DIR / "homelab.md"
 DEFAULT_JSON_OUTPUT = DEFAULT_DIR / "homelab.json"
 DEFAULT_HTML_OUTPUT = DEFAULT_DIR / "index.html"
+DEFAULT_SERVE_BIND = "0.0.0.0"
 DEFAULT_SERVE_PORT = 40500
 DEFAULT_TAILSCALE_HTTPS_PORT = 8447
 
@@ -816,9 +817,10 @@ def is_tcp_port_open(host: str, port: int) -> bool:
         return sock.connect_ex((host, port)) == 0
 
 
-def ensure_local_viewer_server(directory: Path, port: int) -> tuple[bool, str]:
-    if is_tcp_port_open("127.0.0.1", port):
-        return True, f"Local viewer server already listening at http://127.0.0.1:{port}/"
+def ensure_local_viewer_server(directory: Path, bind_host: str, port: int) -> tuple[bool, str]:
+    probe_host = "127.0.0.1" if bind_host == "0.0.0.0" else bind_host
+    if is_tcp_port_open(probe_host, port):
+        return True, f"Local viewer server already listening at http://{probe_host}:{port}/"
 
     log_path = directory / "http-server.log"
     log_file = log_path.open("ab")
@@ -830,7 +832,7 @@ def ensure_local_viewer_server(directory: Path, port: int) -> tuple[bool, str]:
                 "http.server",
                 str(port),
                 "--bind",
-                "127.0.0.1",
+                bind_host,
                 "--directory",
                 str(directory),
             ],
@@ -846,8 +848,8 @@ def ensure_local_viewer_server(directory: Path, port: int) -> tuple[bool, str]:
         log_file.close()
 
     time.sleep(0.4)
-    if is_tcp_port_open("127.0.0.1", port):
-        return True, f"Started local viewer server at http://127.0.0.1:{port}/"
+    if is_tcp_port_open(probe_host, port):
+        return True, f"Started local viewer server at http://{probe_host}:{port}/ (bind {bind_host})"
     return False, f"Local viewer server did not start; see {log_path}"
 
 
@@ -879,8 +881,8 @@ def try_tailscale_serve(local_port: int, https_port: int) -> tuple[bool, str]:
     return False, f"tailscale serve failed: {serve.stderr or serve.stdout or serve.returncode}"
 
 
-def maybe_serve_viewer(directory: Path, local_port: int, tailscale_https_port: int) -> None:
-    local_ok, local_message = ensure_local_viewer_server(directory, local_port)
+def maybe_serve_viewer(directory: Path, bind_host: str, local_port: int, tailscale_https_port: int) -> None:
+    local_ok, local_message = ensure_local_viewer_server(directory, bind_host, local_port)
     print(local_message, file=sys.stderr)
     if not local_ok:
         return
@@ -900,6 +902,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--no-json", action="store_true", help="Do not write the JSON artifact.")
     parser.add_argument("--no-html", action="store_true", help="Do not write the HTML viewer artifact.")
     parser.add_argument("--no-serve", action="store_true", help="Do not start or update the local/Tailscale viewer service.")
+    parser.add_argument("--serve-bind", default=DEFAULT_SERVE_BIND, help=f"Local viewer bind address. Default: {DEFAULT_SERVE_BIND}")
     parser.add_argument("--serve-port", type=int, default=DEFAULT_SERVE_PORT, help=f"Local viewer HTTP port. Default: {DEFAULT_SERVE_PORT}")
     parser.add_argument("--tailscale-https-port", type=int, default=DEFAULT_TAILSCALE_HTTPS_PORT, help=f"Tailscale Serve HTTPS port. Default: {DEFAULT_TAILSCALE_HTTPS_PORT}")
     parser.add_argument("--stdout", action="store_true", help="Print report instead of writing it.")
@@ -938,7 +941,7 @@ def main() -> int:
         for path in written:
             print(path)
         if not args.no_serve and not args.no_html:
-            maybe_serve_viewer(args.html_output.resolve().parent, args.serve_port, args.tailscale_https_port)
+            maybe_serve_viewer(args.html_output.resolve().parent, args.serve_bind, args.serve_port, args.tailscale_https_port)
     elif args.no_write:
         print("Rendered report without writing.", file=sys.stderr)
 

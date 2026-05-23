@@ -17,6 +17,7 @@ All notable changes to this skill are recorded here. Format roughly follows [Kee
 - Updated `SKILL.md` and `README.md` to distinguish the repo template from the generated runtime report artifacts.
 - Made Tailscale exposure optional and non-fatal; report generation no longer depends on tailnet serving.
 - Changed the default local viewer port from `8787` to `40500`.
+- Changed the default viewer bind address to `0.0.0.0` so SWAG can proxy dookie's Tailscale IP on port `40500`.
 
 ## 2026-05-17
 
