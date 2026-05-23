@@ -10,7 +10,14 @@ Any prompt naming one of the devices, or `WillyNet`. Strict device-name fidelity
 
 ## Files
 - `SKILL.md` — lean overview: nodes-at-a-glance table, service→host lookup, conventions
-- `references/homelab.md` — full inventory (~700 lines, read on demand)
+- `references/homelab.md` — generated runtime inventory, read on demand
+- `scripts/generate-homelab-report.py` — pulls host/container/storage/proxy state and rewrites `references/homelab.md`
 
 ## Updating
-SKILL.md and references/homelab.md were seeded from a live MCP sweep on 2026-03-31. Container counts, RAM%, uptime etc. are point-in-time — verify via `arcane-mcp` / `syslog` / `ssh <host> docker ps` before acting on anything that depends on current state. Node names, IPs, roles are stable.
+Regenerate the report instead of hand-maintaining runtime values:
+
+```bash
+python3 src/skills/homelab-map/scripts/generate-homelab-report.py
+```
+
+The generator uses non-interactive SSH plus Docker/ZFS/Unraid/SWAG shell probes. Container counts, RAM%, uptime etc. are point-in-time; rerun before acting on anything current-state dependent.

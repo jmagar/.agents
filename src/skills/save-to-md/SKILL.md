@@ -20,6 +20,8 @@ argument-hint: [path]
 - Repo root: !`git rev-parse --show-toplevel 2>/dev/null || pwd`
 - Worktree: !`git worktree list | grep $(pwd) | head -1`
 - Active PR: !`gh pr view --json number,title,url 2>/dev/null || echo "none"`
+- Beads recent issues: !`bd list --all --sort updated --reverse --limit 100 --json 2>/dev/null || echo "[]"`
+- Beads recent interactions: !`tail -200 .beads/interactions.jsonl 2>/dev/null || echo "none"`
 
 # Save Session Documentation
 
@@ -46,6 +48,7 @@ transcript: <full path to the .jsonl transcript file> (omit if transcript inject
 working directory: <pwd>
 worktree: <worktree path if applicable, otherwise omit>
 pr: <PR number, title, and URL if applicable, otherwise omit>
+beads: <IDs of beads created, closed, edited, or worked on during this session; omit only if none>
 ```
 
 Then include these sections:
@@ -54,21 +57,24 @@ Then include these sections:
 3. **Sequence of Events**: Chronological breakdown of major activities (no timestamps — order only)
 4. **Key Findings**: Important discoveries with file paths and line numbers where relevant
 5. **Technical Decisions**: Reasoning behind implementation choices
-6. **Files Modified**: List of all files created/modified with purpose
-7. **Commands Executed**: Critical bash commands and their results
-8. **Errors Encountered**: What failed, root cause, and how it was resolved — omit if no errors occurred
-9. **Behavior Changes (Before/After)**: User-visible or system-visible behavior changes caused by this session
-10. **Verification Evidence**: Table with `command | expected | actual | status` — omit if no verification commands were run
-11. **Risks and Rollback**: Concise risk notes and rollback path for non-trivial changes — omit if no risk
-12. **Decisions Not Taken**: Alternatives considered but rejected, with brief rationale — omit if none
-13. **References**: Docs, PRs, issues, or URLs consulted during the session — omit if none
-14. **Open Questions**: Unresolved items or assumptions that need follow-up — omit if none
-15. **Next Steps**: Unfinished work from this session (started but not completed) and follow-on tasks not yet started — distinguish between the two
+6. **Files Changed**: List every file created, modified, renamed, or deleted, with the purpose of each change
+7. **Beads Activity**: List every bead created, closed, edited, claimed, assigned, commented on, or otherwise worked during the session. Include bead ID, title, action(s), final status, and why it mattered. Use the injected `Beads recent issues`, `Beads recent interactions`, transcript, and command output; do not omit a bead just because it is already closed
+8. **Tools and Skills Used**: List all notable tools, MCP servers, agents, and skills used during the session, with their purpose. Include any and all issues encountered with tools, MCP servers, agents, or skills, including failures, degraded behavior, missing permissions, bad outputs, retries, and workarounds. Omit only if none were used beyond basic shell/file reads
+9. **Commands Executed**: Critical bash commands and their results
+10. **Errors Encountered**: What failed, root cause, and how it was resolved — omit if no errors occurred
+11. **Behavior Changes (Before/After)**: User-visible or system-visible behavior changes caused by this session
+12. **Verification Evidence**: Table with `command | expected | actual | status` — omit if no verification commands were run
+13. **Risks and Rollback**: Concise risk notes and rollback path for non-trivial changes — omit if no risk
+14. **Decisions Not Taken**: Alternatives considered but rejected, with brief rationale — omit if none
+15. **References**: Docs, PRs, issues, or URLs consulted during the session — omit if none
+16. **Open Questions**: Unresolved items or assumptions that need follow-up — omit if none
+17. **Next Steps**: Unfinished work from this session (started but not completed) and follow-on tasks not yet started — distinguish between the two
 
 After writing the file, print the final absolute path so callers (e.g., `quick-push`) can reference it.
 
 Content quality rules:
 - Facts only. Do not infer values that were not observed in tool/command output.
 - If something is uncertain, place it in **Open Questions** instead of stating it as fact.
+- Treat Beads activity as mandatory session context. If no bead activity occurred, state `No bead activity observed`; otherwise list every observed bead action even if it seems administrative.
 - Keep sections concise (target max 5 bullets per section), but exceed when needed to preserve material implementation details, critical evidence, or safety context.
 - Use file:line references (e.g., `server.ts:45`) for code-specific findings.

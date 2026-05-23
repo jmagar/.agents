@@ -1,14 +1,16 @@
 # save-to-md
 
-Save the current Claude session as a markdown file under `docs/sessions/`, pre-injected with full context: date, repo, branch, HEAD, recent commits, dirty files, transcript path, active PR, worktree.
+Save the current Claude session as a markdown file under `docs/sessions/`, pre-injected with full context: date, repo, branch, HEAD, recent commits, dirty files, transcript path, active PR, worktree, and recent Beads state.
 
 ## What it does
 
 1. Resolves a target path (`$ARGUMENTS` or auto: `docs/sessions/YYYY-MM-DD-description.md`).
 2. Refuses to overwrite — appends `-v2`, `-v3` suffixes on conflict.
 3. If the injected transcript path is set, reads the raw `.jsonl` to recover the full session (the live context window may be truncated).
-4. Writes a metadata block + numbered sections: what was done, files modified, errors encountered, next steps, open questions, verification evidence.
+4. Writes a metadata block + numbered sections: what was done, files changed, bead activity, tools used, errors encountered, next steps, open questions, verification evidence.
 5. Facts-only rule — no speculation; ambiguity goes into Open Questions.
+
+The generated session note must list every bead created, closed, edited, claimed, assigned, commented on, or otherwise worked during the session. If no bead activity occurred, it says so explicitly.
 
 Pairs with `hand-off` — this writes the log; `hand-off` reads it back into a fresh session.
 

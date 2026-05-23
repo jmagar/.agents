@@ -38,7 +38,7 @@ All nodes joined to **Tailscale** mesh (`100.x.y.z`). Router is a UniFi UCG-Max 
 - **All scatological naming.** Don't be cute about it — they are named tootie, dookie, shart, squirts. Use the names verbatim.
 - **`steamy-wsl` ≠ `steamy`** in skill defaults: most skills (`screenshots`, `clipboard`, `nircmd`, `chrome`) target the WSL2 alias because the actual user desktop / win11 box is reached via WSL ssh.
 - **`*.tootie.tv` = SWAG vhost on squirts**, fronts a service running anywhere. Don't assume the service is on tootie just because of the domain.
-- **arcane-agent runs on every node** — it manages local compose projects. Different versions across nodes (drift documented in references).
+- **arcane-agent usually runs on every node** — it manages local compose projects. Check the generated report because stopped/missing agents are runtime state.
 - **Public SSH does not exist.** All inter-node SSH goes through the Tailscale mesh.
 
 ## When to read the reference doc
@@ -48,14 +48,20 @@ Read `references/homelab.md` whenever you need:
 - Storage layout (Unraid disk slots, ZFS pools, share-level breakdowns)
 - Backup chains (which datasets replicate where)
 - All 149 active SWAG configs
-- Vulnerability scan numbers
+- Current runtime collection notes and known follow-up checks
 - Known issues / tech debt log
 - Specific port numbers beyond the headline ones above
 
-`grep` the reference file — it's structured with clear headers (`## Nodes`, `## Storage Architecture`, `## Service Catalog`, `## AI / RAG / Agent Stack`, `## MCP Server Ecosystem`, `## Known Issues & Tech Debt`, etc.)
+`grep` the reference file — it's structured with clear generated headers (`## Nodes`, `## Service Location Summary`, `## Host Container Inventory`, `## Storage Architecture`, `## AI / RAG / Agent Stack`, `## MCP Server Ecosystem`, etc.)
 
 ## Updating this skill
 
-This map was seeded from a live MCP sweep on 2026-03-31 and refreshed with Arcane, SWAG, Syslog, and SSH checks on 2026-05-22. Treat container counts, RAM%, uptime numbers etc. as **point-in-time** — re-verify via `arcane-mcp` / `syslog` / `ssh <host> docker ps` before acting on anything that depends on current state. Names of nodes, roles, and architectural choices are stable; individual IPs and ports should still be verified before automation.
+`references/homelab.md` is generated. Refresh it instead of hand-editing point-in-time data:
 
-If you notice the reference is stale in a load-bearing way (a service moved hosts, a node was added/renamed, a critical port changed), update `references/homelab.md` *and* this overview before the session ends.
+```bash
+python3 src/skills/homelab-map/scripts/generate-homelab-report.py
+```
+
+The generator uses non-interactive SSH, Docker CLI, ZFS CLI, Unraid shell commands, and SWAG config files. Treat container counts, RAM%, uptime numbers etc. as **point-in-time** — re-run the generator before acting on anything that depends on current state. Names of nodes, roles, and architectural choices are stable; individual IPs and ports should still be verified before automation.
+
+If a stable architectural fact changes (node renamed, service permanently moved, critical port changed), update `scripts/generate-homelab-report.py` and then regenerate `references/homelab.md`. Keep this overview aligned with the generated report.

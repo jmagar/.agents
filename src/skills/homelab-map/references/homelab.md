@@ -1,26 +1,8 @@
 # WillyNet Homelab - Infrastructure Documentation
 
-> Seeded from live MCP sweep: 2026-03-31
-> Refreshed from Arcane, SWAG, Syslog, and SSH checks: 2026-05-22
-> Owner: Jacob Magar (jmagar), Columbia, SC
-
----
-
-## Table of Contents
-
-1. [Overview](#overview)
-2. [Network Topology](#network-topology)
-3. [Nodes](#nodes)
-4. [Storage Architecture](#storage-architecture)
-5. [Backup Strategy](#backup-strategy)
-6. [Reverse Proxy & Public Services](#reverse-proxy--public-services)
-7. [Service Catalog](#service-catalog)
-8. [AI / RAG / Agent Stack](#ai--rag--agent-stack)
-9. [MCP Server Ecosystem](#mcp-server-ecosystem)
-10. [Monitoring & Notifications](#monitoring--notifications)
-11. [Virtual Machines](#virtual-machines)
-12. [Security Posture](#security-posture)
-13. [Known Issues & Tech Debt](#known-issues--tech-debt)
+> Generated: 2026-05-22 21:44:06 EDT
+> Generator: `src/skills/homelab-map/scripts/generate-homelab-report.py`
+> Collection method: non-interactive SSH, Docker CLI, ZFS CLI, Unraid shell commands, and SWAG config files.
 
 ---
 
@@ -28,684 +10,386 @@
 
 | Metric | Value |
 |---|---|
-| Total nodes | 6 (4 hardware + 2 WSL VMs) |
-| Total containers running | ~110 fleet-wide from SSH checks (tootie 49, dookie 19, squirts 37, shart 3, steamy-wsl 1, vivobook-wsl 1) |
-| Total storage capacity | ~210 TB (unRAID array) + ~14 TB (ZFS) + ~6 TB NVMe |
+| Total nodes | 6 |
+| Total containers running | 110 |
 | Active SWAG proxy configs | 149 |
-| Gotify notification apps | 19 |
-| UniFi clients | Not refreshed on 2026-05-22; UniFi client API returned an error |
-| Syslog volume | 5.82M entries written in current runtime counters; host table below spans 2026-05-12 onward |
+| Network | WillyNet / 10.1.0.0/24 plus Tailscale mesh |
+| Primary public domain | *.tootie.tv via SWAG on squirts |
 
-**Theme:** All nodes follow a scatological naming convention. Network is `WillyNet`. Most services are accessible via `*.tootie.tv` subdomains via SWAG.
+## Collection Notes
 
----
+- All configured host collection commands completed successfully.
 
-## Network Topology
+Values in this document are a fresh runtime snapshot. Re-run the generator before making operational decisions:
 
-### Internet & Routing
-
-- **Primary WAN:** ATT (residential fiber/cable)
-- **Secondary WAN:** Internet 2 (failover/load-balance, configured in UniFi)
-- **Router:** UniFi Cloud Gateway Max (UCG-Max) — "The Mothership"
-- **WiFi AP:** UniFi U7 Pro (WiFi 7) — "Axilla"
-- **SSID:** `WillyNet` · WPA2-PSK · 2.4/5/6 GHz
-- **LAN subnet:** `10.1.0.0/24` (DHCP via UCG-Max)
-- **Tailscale mesh:** All nodes joined (CGNAT range `100.x.y.z`)
-- **UniFi alarms/events:** not refreshed on 2026-05-22; the UniFi clients action failed via Lab.
-
-### Key IPs (10.1.0.0/24)
-
-| Host | IP | Type | Notes |
-|---|---|---|---|
-| Cloud Gateway Max | `10.1.0.1` | router | "The Mothership" |
-| tootie | `10.1.0.2` | wired | unRAID NAS |
-| pixel | `10.1.0.4` | wifi | phone |
-| vivobook-wsl | `10.1.0.5` | wired | WSL dev machine |
-| dookie | `10.1.0.6` | wired | dev/AI box |
-| squirts | `10.1.0.8` | wired | edge services |
-| steamy-wsl | `10.1.0.65` | wired | GPU box (Win11 + WSL2) |
-| iPhone | `10.1.0.66` | wifi | |
-| Nest Thermostat | `10.1.0.90` | wifi | |
-| iPad | `10.1.0.197` | wifi | |
-| shart | `10.1.0.3` | wired | also has `169.254.80.235` on `shim-br0` |
-
-### Tailscale IPs (selected)
-
-| Host | Tailscale IP |
-|---|---|
-| dookie | `100.88.16.79` |
-| tootie | `100.120.242.29` (ssh port 29229) |
-| squirts | `100.75.111.118` |
-| shart | `100.118.209.1` |
-| steamy-wsl | `100.74.16.82` |
-| vivobook-wsl | `100.104.50.17` |
-
-### Wireless Clients
-
-Not refreshed on 2026-05-22. The previous March 2026 snapshot listed 26 connected wireless clients, including Nest Audio/Home devices, Chromecast Audio, Living Room TV, Nursery Camera + Light, ESPHome smart lights, and Wyze Cam.
-
----
+```bash
+python3 src/skills/homelab-map/scripts/generate-homelab-report.py
+```
 
 ## Nodes
 
-### tootie — Primary NAS
+| Name | Role | LAN IP | Tailscale IP | OS | Kernel | Uptime | Memory | Containers |
+|---|---|---|---|---|---|---|---|---|
+| tootie | Primary NAS / app server | 10.1.0.2 | 100.120.242.29 | Unraid | Linux 6.12.54-Unraid | up 3 weeks, 5 days, 14 hours, 38 minutes | 88Gi / 125Gi used | 49 |
+| dookie | Dev / AI / MCP hub | 10.1.0.6 | 100.88.16.79 | Linux KVM guest on tootie | Linux 7.0.0-15-generic | up 2 days, 3 hours, 8 minutes | 41Gi / 57Gi used | 19 |
+| squirts | Edge services | 10.1.0.8 | 100.75.111.118 | Ubuntu | Linux 6.17.0-29-generic | up 2 days, 3 hours, 35 minutes | 10Gi / 14Gi used | 37 |
+| shart | ZFS backup target | 10.1.0.3 | 100.118.209.1 | Unraid | Linux 6.12.54-Unraid | up 1 day, 21 hours, 37 minutes | 3.2Gi / 15Gi used | 3 |
+| steamy / steamy-wsl | GPU workloads | not observed | 100.74.16.82 | Windows 11 + WSL2 | Linux 5.15.167.4-microsoft-standard-WSL2 | up 1 day, 6 hours, 24 minutes | 2.0Gi / 30Gi used | 1 |
+| vivobook / vivobook-wsl | Mobile dev laptop | 10.1.0.5 | 100.104.50.17 | Windows 11 + WSL2 | Linux 6.6.87.2-microsoft-standard-WSL2 | up 1 day, 3 hours, 30 minutes | 1.0Gi / 11Gi used | 1 |
 
-The center of gravity. Houses media, applications, databases, AI services, and most of the Docker fleet.
+### Network Interfaces
 
-| Property | Value |
-|---|---|
-| Role | Primary NAS / app server |
-| IP | `10.1.0.2` (LAN) / `100.120.242.29` (TS) |
-| OS | Unraid OS **7.2.4** (kernel 6.12.54) |
-| CPU | Intel **i7-13700K** (16 cores / 24 threads, up to 5.4 GHz) |
-| RAM | 128 GB reported by Unraid/Linux (`free` shows 125 GiB usable) |
-| Motherboard | MSI PRO Z790-A WIFI DDR4 |
-| Web UI | http://10.1.0.2:6969 (HTTP) / :31337 (HTTPS) |
-| SSH | port 29229 |
-| Uptime | 3w 5d |
-| Containers | 49 running |
-| Live CPU | not refreshed |
-| Live RAM | 94 GiB / 125 GiB used |
+#### tootie
+- `lo               UNKNOWN        127.0.0.1/8`
+- `br0              UP             10.1.0.2/24 metric 1`
+- `br-1c487b072bef  UP             172.19.0.1/16`
+- `br-cab89702537c  UP             10.2.0.1/16`
+- `docker0          DOWN           172.17.0.1/16`
+- `tailscale1       UNKNOWN        100.120.242.29/32`
+#### dookie
+- `lo               UNKNOWN        127.0.0.1/8`
+- `enp1s0           UP             10.1.0.6/24`
+- `br-88626fc1d29b  UP             172.26.0.1/16`
+- `br-9e72de829602  UP             172.25.0.1/16`
+- `docker0          DOWN           172.17.0.1/16`
+- `br-5605dfd09dcf  UP             172.19.0.1/16`
+- `tailscale0       UNKNOWN        100.88.16.79/32`
+- `br-7882f50f0b4c  UP             172.18.0.1/16`
+- `br-815298847eba  UP             172.20.0.1/16`
+#### squirts
+- `lo               UNKNOWN        127.0.0.1/8`
+- `enx00e04c680225  UP             10.1.0.8/24`
+- `tailscale0       UNKNOWN        100.75.111.118/32`
+- `br-2040b8105cb7  UP             172.20.0.1/16`
+- `br-35bb6ab2bf39  UP             10.6.0.1/16`
+- `docker0          UP             172.17.0.1/16`
+#### shart
+- `lo               UNKNOWN        127.0.0.1/8`
+- `br0              UP             10.1.0.3/24`
+- `tailscale1       UNKNOWN        100.118.209.1/32`
+- `br-b20808aae73e  UP             10.5.0.1/16`
+- `docker0          UP             172.17.0.1/16`
+- `shim-br0@br0     UP             10.1.0.3/24 169.254.80.235/16 metric 1005`
+#### steamy / steamy-wsl
+- `lo               UNKNOWN        127.0.0.1/8 10.255.255.254/32`
+- `eth0             UP             172.23.180.190/20`
+- `tailscale0       UNKNOWN        100.74.16.82/32`
+#### vivobook / vivobook-wsl
+- `lo               UNKNOWN        127.0.0.1/8 10.255.255.254/32`
+- `eth2             UP             100.112.100.103/32`
+- `eth3             UP             10.1.0.5/24`
+- `tailscale0       UNKNOWN        100.104.50.17/32`
 
-**Hardware unique to tootie:**
-- 13× spinning disks (data array, no parity)
-- 3× NVMe cache pools (ZFS)
-- Unraid GraphQL API + `unraid-mcp` connector
+## Service Location Summary
 
----
+Observed means the expected container name was found in the live `docker ps` output for that host. Missing may mean the service moved, is stopped, has a different container name, or is only represented by a SWAG config.
 
-### dookie — Dev / AI / MCP Hub
+| Host | Expected services observed | Expected services not observed |
+|---|---|---|
+| tootie | plex, sonarr, radarr, bazarr, prowlarr, qbittorrent, sabnzbd, tautulli, immich, audiobookshelf, kavita, navidrome, minio, loggifly, notifiarr, apprise-api, olivetin, zipline | - |
+| dookie | axon, axon-qdrant, axon-tei, axon-chrome, syslog-mcp, arcane-mcp, unraid-mcp, gotify-mcp, unifi-mcp, tailscale-mcp, apprise-mcp, labby, agent-os-win11 | - |
+| squirts | swag, authelia, adguard, gotify, vaultwarden, paperless, linkding, karakeep, bytestash, memos, radicale, searxng, dockge, dozzle, rustdesk, multi-scrobbler, maloja | - |
+| shart | arcane-agent, portainer_agent, dockersocket | - |
+| steamy / steamy-wsl | crawl4r-qdrant | arcane-agent |
+| vivobook / vivobook-wsl | arcane-agent | - |
 
-Where the active development, RAG pipeline, and MCP servers live.
+## Host Container Inventory
 
-| Property | Value |
-|---|---|
-| Role | Dev box, Axon/RAG infrastructure, MCP services |
-| IP | `10.1.0.6` (LAN) / `100.88.16.79` (TS) |
-| Hostname | `dookie` (also runs as KVM guest on tootie via libvirt) |
-| OS | Debian Linux |
-| CPU | 23 cores reported (likely passthrough/vCPUs from tootie host) |
-| RAM | 59 GB total |
-| Uptime | 2d 1h |
-| Containers | 19 running |
-| Live CPU | not refreshed |
-| Live RAM | 50 GiB / 57 GiB used |
-| Load avg | not refreshed |
-
-**Note:** dookie is a VM running on tootie (state: `RUNNING` in libvirt). It's also reachable directly over the LAN as `10.1.0.6`.
-
-**Notable containers on dookie:**
-- `axon-qdrant` (v1.13.1) — vector store
-- `axon-tei` — HuggingFace TEI `89-1.9`, serving **Qwen/Qwen3-Embedding-0.6B** (float16)
-- `axon` — dev runtime on port 8001
-- `axon-chrome` — headless Chrome for scraping
-- `syslog-mcp` — `ghcr.io/jmagar/syslog-mcp:0.27.1`, ports 1514 (TCP/UDP) + 3100 (HTTP)
-- `arcane-mcp` — port 44332
-- `unraid-mcp` — `unrust:dev`, port 40010
-- `gotify-mcp`, `unifi-mcp`, `tailscale-mcp`, `apprise-mcp`, `example-mcp` — ports 40020-40060
-- `labby` — Lab control plane, port 8765
-- `arcane-agent` (v1.19.4) — manages `/home/jmagar/compose`
-- `dockersocket` proxy (Tecnativa)
-- `agent-os-win11` (dockurr/windows) — Windows 11 sandbox at `:8006` (noVNC), `:33890` (RDP), `:2222` (SSH). This is the **winbox** skill target.
-- `agentmemory-iii-engine-1`, `aurora-design-system`, `open-design`
-
----
-
-### squirts — Services / Edge Node
-
-Auth, networking, and lighter services.
-
-| Property | Value |
-|---|---|
-| Role | Edge services, SWAG, Authelia, MCP gateways |
-| IP | `10.1.0.8` |
-| Hostname | `squirts` |
-| OS | Ubuntu Linux |
-| CPU | 4 cores (Intel NUC class) |
-| RAM | 15 GB total |
-| Uptime | 2d 1h |
-| Containers | 37 running |
-| Live CPU | not refreshed |
-| Live RAM | 10 GiB / 14 GiB used |
-| ZFS | `bpool` 1.88G / 1.25G used, `rpool` 920G / 176G used, both ONLINE |
-
-**Notable containers:**
-- `swag` (LinuxServer.io SWAG) — primary reverse proxy
-- `authelia` + `authelia-mariadb` + `authelia-redis`
-- `adguard` — DNS + ad blocking
-- `gotify`
-- `overseerr`
-- `paperless` + `paperless-db` + `paperless-cache`
-- `mcp-oauth` + `callback-relay` + `mcp-oauth-redis` — OAuth 2.1 for MCP servers
-- `swag-mcp` — MCP for SWAG management
-- `vaultwarden`, `linkding`, `karakeep`, `opengist`, `bytestash`
-- `memos`, `radicale`, `searxng` + redis, `wizarr`
-- `dockge`, `dozzle`, `rustdesk`, `multi-scrobbler`, `maloja`
-- `dolt`, `onecli-postgres-1`, `portainer_agent`
-- `arcane-agent` (v1.19.4)
-
----
-
-### shart — Backup Target
-
-Pure storage. ZFS receive endpoint.
-
-| Property | Value |
-|---|---|
-| Role | ZFS backup target (Sanoid/Syncoid) |
-| IP | `10.1.0.3` (LAN) / `100.118.209.1` (TS); also `169.254.80.235` on `shim-br0` |
-| Hostname | `SHART` |
-| OS | Unraid |
-| CPU | 8 cores |
-| RAM | 15.8 GB total |
-| Uptime | 1d 19h |
-| Containers | 3 running |
-| Live CPU | not refreshed |
-| Live RAM | 3.2 GiB / 15 GiB used |
-
-**Storage:**
-- Boot: `/dev/sda1` — 29 GB
-- NVMe cache: `/dev/nvme0n1p1` — 239 GB (6.5 GB used)
-- ZFS pool **`backup`**: **7.27 TB** total, 1.80 TB used, 5.47 TB free, frag 20%, ONLINE
-
-shart receives ZFS streams nightly from both `tootie` (cache/*) and `squirts` (rpool/*). Holds full appdata/compose backups.
-
----
-
-### steamy — GPU Workloads
-
-Win11 host with WSL2 for GPU container workloads.
-
-| Property | Value |
-|---|---|
-| Role | GPU compute (RTX 4070) |
-| IP | `10.1.0.65` |
-| Hostname | `STEAMY` (Windows) / `steamy-wsl` (WSL2) |
-| OS | Windows 11 + WSL2 (Ubuntu) |
-| GPU | NVIDIA RTX 4070 |
-| Containers | 1 (in WSL Docker) |
-
-**Notable container:** `crawl4r-qdrant` running `qdrant:gpu-nvidia-latest` — GPU-accelerated vector store, separate from dookie's CPU-bound `axon-qdrant`.
-
-Arcane currently lists the `steamy` environment as disabled/offline, but SSH to `steamy-wsl` works and the GPU Qdrant container is running.
-
-**This is also Jacob's actual desktop** — the `screenshots`, `clipboard`, `nircmd`, and `chrome` skills default to `ssh steamy-wsl`.
-
----
-
-### vivobook — WSL Dev Machine
-
-Laptop. Mobile development.
-
-| Property | Value |
-|---|---|
-| Role | Mobile dev (WSL2) |
-| IP | `10.1.0.5` (wired when docked) |
-| Hostname | `vivobook-wsl` |
-| OS | Windows 11 + WSL2 |
-| Containers | 1 (arcane-agent) |
-| Tailscale IP | `100.104.50.17` |
-
-Notable: runs `arcane-agent` v1.19.4 in WSL2.
-
----
+### tootie
+| Container | Image | Ports | Status |
+|---|---|---|---|
+| adminer | 0959399eff12 | 0.0.0.0:1993->8080/tcp, [::]:1993->8080/tcp | Up 3 weeks |
+| agregarr | agregarr/agregarr:latest | 0.0.0.0:52000->7171/tcp, [::]:52000->7171/tcp | Up 3 weeks |
+| apprise-api | 278de85adde9 | 0.0.0.0:8766->8000/tcp, [::]:8766->8000/tcp | Up 2 weeks |
+| arcane | ghcr.io/getarcaneapp/arcane:latest | 0.0.0.0:3552->3552/tcp, :::3552->3552/tcp | Up 4 days |
+| arcane_postgres | postgres:17-alpine | 0.0.0.0:56000->5432/tcp, [::]:56000->5432/tcp | Up 7 days (healthy) |
+| audiobookshelf | b1290bc75356 | 0.0.0.0:13378->80/tcp, [::]:13378->80/tcp | Up 3 weeks |
+| autopulse | ghcr.io/dan-online/autopulse:latest | 0.0.0.0:2875->80/tcp, [::]:2875->80/tcp | Up 2 days (healthy) |
+| autopulse-postgres | postgres:16 | 5432/tcp | Up 2 days (healthy) |
+| bazarr | 88351f2190bf | 0.0.0.0:6767->6767/tcp, :::6767->6767/tcp | Up 12 days |
+| cli-proxy-api | eceasy/cli-proxy-api:latest | 0.0.0.0:1455->1455/tcp, :::1455->1455/tcp, 0.0.0.0:8085->8085/tcp, :::8085->8085/tcp, 0.0.0.0:8317->8317/tcp, :::8317->8317/tcp, 0.0.0.0:11451->11451/tcp, :::11451->11451/tcp, 0.0.0.0:51121->51121/tcp, :::51121->51121/tcp, 0.0.0.0:54545->54545/tcp, :::54545->54545/tcp | Up 2 days |
+| cli-proxy-postgres | postgres:16 | 0.0.0.0:5442->5432/tcp, [::]:5442->5432/tcp | Up 2 days (healthy) |
+| crontab-ui | alseambusher/crontab-ui:latest | 8000/tcp, 0.0.0.0:8969->80/tcp, [::]:8969->80/tcp | Up 3 weeks (healthy) |
+| diskspeed | jbartlett777/diskspeed:latest | 8080/tcp, 0.0.0.0:18888->80/tcp, [::]:18888->80/tcp | Up 3 weeks |
+| dockersocket | ghcr.io/tecnativa/docker-socket-proxy:latest | 0.0.0.0:2375->2375/tcp, :::2375->2375/tcp | Up 3 weeks |
+| feishin | ghcr.io/jeffvli/feishin:latest | 8080/tcp, 0.0.0.0:9180->9180/tcp, :::9180->9180/tcp | Up 3 weeks |
+| flaresolverr | flaresolverr/flaresolverr:latest | 0.0.0.0:8191->8191/tcp, :::8191->8191/tcp, 8192/tcp | Up 3 weeks |
+| glances | nicolargo/glances:latest | 0.0.0.0:61208->61208/tcp, :::61208->61208/tcp, 61209/tcp | Up 3 weeks |
+| immich_machine_learning | ghcr.io/immich-app/immich-machine-learning:release | - | Up 3 weeks (healthy) |
+| immich_postgres | tensorchord/pgvecto-rs:pg14-v0.2.0 | 5432/tcp | Up 3 weeks (healthy) |
+| immich_redis | redis:6.2-alpine | 6379/tcp | Up 3 weeks (healthy) |
+| immich_server | ghcr.io/immich-app/immich-server:release | 0.0.0.0:2283->2283/tcp, :::2283->2283/tcp | Up 3 weeks (healthy) |
+| kavita | 481aea096079 | 5000/tcp, 0.0.0.0:5999->80/tcp, [::]:5999->80/tcp | Up 3 weeks (healthy) |
+| loggifly | ghcr.io/clemcer/loggifly:v1.4.0 | - | Up 2 weeks (healthy) |
+| mariadb | lscr.io/linuxserver/mariadb:latest | 0.0.0.0:3306->3306/tcp, :::3306->3306/tcp | Up 2 days |
+| minio | minio/minio:latest | 0.0.0.0:9000-9001->9000-9001/tcp, :::9000-9001->9000-9001/tcp | Up 3 weeks (healthy) |
+| navidrome | 50e167470f18 | 0.0.0.0:4533->4533/tcp, :::4533->4533/tcp | Up 3 weeks |
+| notifiarr | golift/notifiarr:latest | 0.0.0.0:5454->5454/tcp, :::5454->5454/tcp | Up 3 weeks |
+| olivetin | jamesread/olivetin:latest | 0.0.0.0:1337->1337/tcp, :::1337->1337/tcp | Up 22 hours |
+| plex | 5809619fa0e3 | 1900/udp, 5353/udp, 32410/udp, 8324/tcp, 32412-32414/udp, 32469/tcp, 0.0.0.0:32400->32400/tcp, :::32400->32400/tcp | Up 3 weeks |
+| plex-tvtime | zggis/plex-tvtime:latest | 4444/tcp, 9515/tcp, 0.0.0.0:3365->8080/tcp, [::]:3365->8080/tcp | Up 2 weeks |
+| postgresql14 | 5707f60969a4 | 0.0.0.0:5432->5432/tcp, :::5432->5432/tcp | Up 12 days |
+| postgresql15 | 86832d1a469e | 0.0.0.0:5433->5432/tcp, [::]:5433->5432/tcp | Up 13 days |
+| prowlarr | binhex/arch-prowlarr | 0.0.0.0:9696->9696/tcp, :::9696->9696/tcp | Up 3 weeks (healthy) |
+| pulse_neo4j | neo4j:2025.10.1-community-bullseye | 7473/tcp, 0.0.0.0:50210->7474/tcp, [::]:50210->7474/tcp, 0.0.0.0:50211->7687/tcp, [::]:50211->7687/tcp | Up 3 weeks (healthy) |
+| qbittorrent | 70ea470ac756 | 0.0.0.0:6881->6881/tcp, :::6881->6881/tcp, 0.0.0.0:8080->8080/tcp, :::8080->8080/tcp, 6881/udp, 0.0.0.0:30153->30153/tcp, :::30153->30153/tcp | Up 3 weeks |
+| radarr | d1aa08807c7e | 0.0.0.0:7878->7878/tcp, :::7878->7878/tcp | Up 12 days |
+| redis | redis:alpine | 6379/tcp, 0.0.0.0:6379->80/tcp, [::]:6379->80/tcp | Up 2 weeks |
+| sabnzbd | c02f7bbb0377 | 0.0.0.0:8095->8080/tcp, [::]:8095->8080/tcp | Up 12 days |
+| scrutiny | 580c421f4c94 | 8080/tcp, 0.0.0.0:8081->80/tcp, [::]:8081->80/tcp | Up 3 weeks |
+| shelfmark | ghcr.io/calibrain/shelfmark:latest | 0.0.0.0:8084->8084/tcp, :::8084->8084/tcp | Up 9 days (healthy) |
+| sonarr | b09b31c97c92 | 0.0.0.0:8989->8989/tcp, :::8989->8989/tcp | Up 12 days |
+| tautulli | dca7f28de78a | 0.0.0.0:8181->8181/tcp, :::8181->8181/tcp | Up 12 days |
+| tracearr | ghcr.io/connorgallopo/tracearr:latest | 0.0.0.0:34000->3000/tcp, [::]:34000->3000/tcp | Up 3 days (healthy) |
+| tracearr-db | timescale/timescaledb-ha:pg18.1-ts2.25.0 | 5432/tcp, 8008/tcp, 8081/tcp | Up 3 weeks (healthy) |
+| tracearr-redis | 5068a1b35387 | 6379/tcp | Up 2 weeks (healthy) |
+| vnstat | vergoh/vnstat:latest | 0.0.0.0:8685->8685/tcp, :::8685->8685/tcp | Up 2 weeks |
+| wrapperr | aunefyren/wrapperr:latest | 0.0.0.0:8282->8282/tcp, :::8282->8282/tcp | Up 3 weeks |
+| zipline | ghcr.io/diced/zipline:latest | 0.0.0.0:8092->3000/tcp, [::]:8092->3000/tcp | Up 2 days |
+| zipline_postgres | postgres:16 | 0.0.0.0:8093->5432/tcp, [::]:8093->5432/tcp | Up 2 days (healthy) |
+### dookie
+| Container | Image | Ports | Status |
+|---|---|---|---|
+| agent-os-win11 | dockurr/windows | 0.0.0.0:8006->8006/tcp, [::]:8006->8006/tcp, 0.0.0.0:2222->22/tcp, [::]:2222->22/tcp, 0.0.0.0:33890->3389/tcp, 0.0.0.0:33890->3389/udp, [::]:33890->3389/tcp, [::]:33890->3389/udp | Up 2 days |
+| agentmemory-iii-engine-1 | iiidev/iii:0.11.2 | 127.0.0.1:3111-3112->3111-3112/tcp, 127.0.0.1:9464->9464/tcp, 127.0.0.1:49134->49134/tcp | Up 2 days |
+| apprise-mcp | apprise-mcp:dev | 0.0.0.0:40050->40050/tcp, [::]:40050->40050/tcp | Up 2 days (healthy) |
+| arcane-agent | ghcr.io/getarcaneapp/arcane-headless:latest | 0.0.0.0:3553->3553/tcp, [::]:3553->3553/tcp | Up 2 days |
+| arcane-mcp | arcane-mcp-arcane-mcp | 3000/tcp, 0.0.0.0:44332->44332/tcp, [::]:44332->44332/tcp | Up 2 days (healthy) |
+| aurora-design-system | aurora-design-system:local | 0.0.0.0:50000->3000/tcp, [::]:50000->3000/tcp | Up 2 days |
+| axon | axon:dev-runtime | 0.0.0.0:8001->8001/tcp | Up 18 hours (healthy) |
+| axon-chrome | axon-axon-chrome | 0.0.0.0:6000->6000/tcp, [::]:6000->6000/tcp, 0.0.0.0:9222-9223->9222-9223/tcp, [::]:9222-9223->9222-9223/tcp | Up 29 hours (healthy) |
+| axon-qdrant | qdrant/qdrant:v1.13.1 | 0.0.0.0:53333->6333/tcp, [::]:53333->6333/tcp, 0.0.0.0:53334->6334/tcp, [::]:53334->6334/tcp | Up 29 hours (healthy) |
+| axon-tei | ghcr.io/huggingface/text-embeddings-inference:89-1.9 | 0.0.0.0:52000->80/tcp, [::]:52000->80/tcp | Up 29 hours (healthy) |
+| dockersocket | ghcr.io/tecnativa/docker-socket-proxy:latest | 0.0.0.0:2375->2375/tcp, [::]:2375->2375/tcp | Up 2 days |
+| example-mcp | rmcp-template:dev | 0.0.0.0:40060->40060/tcp, [::]:40060->40060/tcp | Up About an hour (healthy) |
+| gotify-mcp | rustify:dev | 0.0.0.0:40020->40020/tcp, [::]:40020->40020/tcp | Up 2 days (healthy) |
+| labby | labby:dev | 0.0.0.0:8765->8765/tcp, [::]:8765->8765/tcp | Up 10 hours |
+| open-design | vanjayak/open-design:latest | 0.0.0.0:7456->7456/tcp, [::]:7456->7456/tcp | Up 2 days (healthy) |
+| syslog-mcp | ghcr.io/jmagar/syslog-mcp:0.27.1 | 0.0.0.0:1514->1514/tcp, [::]:1514->1514/tcp, 0.0.0.0:3100->3100/tcp, 0.0.0.0:1514->1514/udp, [::]:3100->3100/tcp, [::]:1514->1514/udp | Up 30 hours (healthy) |
+| tailscale-mcp | rustscale:dev | 0.0.0.0:40040->40040/tcp, [::]:40040->40040/tcp | Up 2 days (healthy) |
+| unifi-mcp | rustifi:dev | 0.0.0.0:40030->40030/tcp, [::]:40030->40030/tcp | Up 2 days (healthy) |
+| unraid-mcp | unrust:dev | 0.0.0.0:40010->40010/tcp, [::]:40010->40010/tcp | Up 2 days (healthy) |
+### squirts
+| Container | Image | Ports | Status |
+|---|---|---|---|
+| adguard | 11notes/adguard:0.107.64 | 0.0.0.0:53->53/tcp, [::]:53->53/tcp, 0.0.0.0:3000->3000/tcp, 0.0.0.0:53->53/udp, [::]:3000->3000/tcp, [::]:53->53/udp, 0.0.0.0:3010->80/tcp, [::]:3010->80/tcp | Up 2 days (healthy) |
+| arcane-agent | ghcr.io/getarcaneapp/arcane-headless:latest | 0.0.0.0:3553->3553/tcp, [::]:3553->3553/tcp | Up 2 days |
+| authelia | authelia/authelia | 0.0.0.0:9091->9091/tcp, [::]:9091->9091/tcp | Up 19 hours (healthy) |
+| authelia-mariadb | lscr.io/linuxserver/mariadb | 0.0.0.0:3310->3306/tcp, [::]:3310->3306/tcp | Up 2 days |
+| authelia-redis | bitnami/redis:latest | 0.0.0.0:6382->6379/tcp, [::]:6382->6379/tcp | Up 2 days |
+| bytestash | ghcr.io/jordan-dalby/bytestash:latest | 0.0.0.0:5000->5000/tcp, [::]:5000->5000/tcp | Up 2 days |
+| callback-relay | mcp-oauth-gateway-callback-relay | 8000/tcp | Up 2 days (healthy) |
+| dockersocket | ghcr.io/tecnativa/docker-socket-proxy:latest | 0.0.0.0:2375->2375/tcp, [::]:2375->2375/tcp | Up 2 days |
+| dockge | louislam/dockge | 0.0.0.0:5001->5001/tcp, [::]:5001->5001/tcp | Up 2 days (healthy) |
+| dolt | dolthub/dolt-sql-server:latest | 7007/tcp, 33060/tcp, 0.0.0.0:3311->3306/tcp, [::]:3311->3306/tcp, 0.0.0.0:33110->8000/tcp, [::]:33110->8000/tcp | Up 2 days (healthy) |
+| dozzle | amir20/dozzle:latest | 0.0.0.0:6947->8080/tcp, [::]:6947->8080/tcp | Up 2 days |
+| gotify | gotify/server:latest | 0.0.0.0:8070->80/tcp, [::]:8070->80/tcp | Up 2 days (healthy) |
+| karakeep | ghcr.io/karakeep-app/karakeep:release | 0.0.0.0:3031->3000/tcp, [::]:3031->3000/tcp | Up 2 days (healthy) |
+| karakeep-chrome | gcr.io/zenika-hub/alpine-chrome:123 | - | Up 2 days |
+| karakeep-meilisearch | getmeili/meilisearch:v1.11.1 | 7700/tcp | Up 2 days |
+| linkding | sissbruecker/linkding | 0.0.0.0:9090->9090/tcp, [::]:9090->9090/tcp | Up 2 days (healthy) |
+| maloja | krateng/maloja:latest | 0.0.0.0:42010->42010/tcp, [::]:42010->42010/tcp | Up 2 days |
+| mcp-oauth | mcp-oauth-gateway-mcp-oauth | 8000/tcp | Up 2 days (healthy) |
+| mcp-oauth-redis | 9210b8dc25f1 | 6379/tcp | Up 2 days (healthy) |
+| memos | ghcr.io/usememos/memos | 0.0.0.0:5230->5230/tcp, [::]:5230->5230/tcp | Up 2 days |
+| multi-scrobbler | f181896c0373 | 0.0.0.0:9078->9078/tcp, [::]:9078->9078/tcp | Up 2 days |
+| onecli-postgres-1 | postgres:18-alpine | 127.0.0.1:5432->5432/tcp | Up 2 days (healthy) |
+| opengist | ghcr.io/thomiceli/opengist | 0.0.0.0:2222->2222/tcp, [::]:2222->2222/tcp, 0.0.0.0:6157->6157/tcp, [::]:6157->6157/tcp, 6158/tcp | Up 2 days (healthy) |
+| overseerr | 6fc38cdf52e7 | 0.0.0.0:5055->5055/tcp, [::]:5055->5055/tcp | Up 2 days |
+| paperless | 5fc22275c864 | 0.0.0.0:8024->8000/tcp, [::]:8024->8000/tcp | Up 2 days (healthy) |
+| paperless-cache | 63e868dc880e | 6379/tcp | Up 2 days |
+| paperless-db | 019965b81888 | 5432/tcp | Up 2 days |
+| portainer_agent | portainer/agent:2.32.0 | 0.0.0.0:9001->9001/tcp, [::]:9001->9001/tcp | Up 2 days |
+| radicale | c18d2481cfd5 | 0.0.0.0:5232->5232/tcp, [::]:5232->5232/tcp | Up 2 days (healthy) |
+| rustdesk-hbbr | rustdesk/rustdesk-server:latest | - | Up 2 days |
+| rustdesk-hbbs | rustdesk/rustdesk-server:latest | - | Up 2 days |
+| searxng | de25454e31a1 | 0.0.0.0:1236->8080/tcp, [::]:1236->8080/tcp | Up 2 days |
+| searxng-redis | d10b936dd67d | 6379/tcp | Up 2 days |
+| swag | lscr.io/linuxserver/swag | 0.0.0.0:80->80/tcp, [::]:80->80/tcp, 0.0.0.0:443->443/tcp, [::]:443->443/tcp, 0.0.0.0:2002->22/tcp, [::]:2002->22/tcp | Up 18 hours |
+| swag-mcp | ghcr.io/jmagar/swag-mcp:1.1.6 | 127.0.0.1:8012->8000/tcp | Up 2 days (healthy) |
+| vaultwarden | vaultwarden/server | 0.0.0.0:4743->80/tcp, [::]:4743->80/tcp | Up 2 days (healthy) |
+| wizarr | ghcr.io/wizarrrr/wizarr | 0.0.0.0:5690->5690/tcp, [::]:5690->5690/tcp | Up 2 days |
+### shart
+| Container | Image | Ports | Status |
+|---|---|---|---|
+| arcane-agent | ghcr.io/getarcaneapp/arcane-headless:latest | 0.0.0.0:3553->3553/tcp, :::3553->3553/tcp | Up 46 hours |
+| dockersocket | ghcr.io/tecnativa/docker-socket-proxy:latest | 0.0.0.0:2375->2375/tcp, :::2375->2375/tcp | Up 46 hours |
+| portainer_agent | portainer/agent:2.32.0 | 0.0.0.0:9001->9001/tcp, :::9001->9001/tcp | Up 46 hours |
+### steamy / steamy-wsl
+| Container | Image | Ports | Status |
+|---|---|---|---|
+| crawl4r-qdrant | qdrant/qdrant:gpu-nvidia-latest | 0.0.0.0:52001->6333/tcp, [::]:52001->6333/tcp, 0.0.0.0:52002->6334/tcp, [::]:52002->6334/tcp | Up 30 hours (healthy) |
+### vivobook / vivobook-wsl
+| Container | Image | Ports | Status |
+|---|---|---|---|
+| arcane-agent | ghcr.io/getarcaneapp/arcane-headless:latest | 0.0.0.0:3553->3553/tcp, [::]:3553->3553/tcp | Up 30 hours |
 
 ## Storage Architecture
 
-### tootie — Unraid Array (Spinning Rust)
+### tootie - Unraid Array and Cache
 
-⚠ **CRITICAL: Array is running with ZERO parity.**
+```text
+Filesystem      Size  Used Avail Use% Mounted on
+shfs            199T  182T   17T  92% /mnt/user
+cache           2.4T   54G  2.3T   3% /mnt/cache
+```
 
-| Slot | Size | Model | Used | Notes |
-|---|---|---|---|---|
-| disk1 | 12 TB | WD Red | 90.9% | |
-| disk2 | 12 TB | WD Red | 90.8% | |
-| disk3 | 18 TB | WD Gold | 93.8% | high |
-| disk4 | 14 TB | WD 140 | 92.0% | |
-| disk5 | 18 TB | WD Gold | 93.7% | high |
-| disk6 | 18 TB | WD Gold | 87.9% | |
-| disk7 | 18 TB | WD Gold | 87.5% | |
-| disk8 | 18 TB | WD Gold | 87.5% | |
-| disk9 | 18 TB | WD Gold | 87.5% | |
-| disk10 | 18 TB | WD Gold | 87.5% | |
-| disk11 | 18 TB | WD Gold | 87.5% | |
-| disk12 | 18 TB | WD Gold | 87.5% | |
-| disk13 | 18 TB | WD Gold | 87.5% | |
-| **TOTAL** | **~199 TiB mounted as `/mnt/user`** | | **182 TiB used / 17 TiB free (92%)** | |
+Parity status excerpt:
 
-**Last parity check:** 2025-01-03 (88 days ago, 0 errors, 101.8 MB/s, ~49h duration). At that time parity was configured. Parity disk is currently absent.
+```text
+mdNumDisabled=2
+diskName.0=
+diskSize.0=0
+rdevName.0=
+```
 
-### tootie — ZFS Cache Pools (NVMe)
+Block devices excerpt:
 
-3 NVMe slots, each a separate ZFS pool.
+```text
+NAME      SIZE MODEL                        TYPE
+loop0   651.8M                              loop
+loop1   173.4M                              loop
+loop2      10G                              loop
+sda      10.9T WDC WD120EDBZ-11B1HA0        disk
+sdb      10.9T WDC WD120EDBZ-11B1HA0        disk
+sdc      12.7T WDC WD140EDGZ-11B1PA0        disk
+sdd      16.4T WDC WD180EDGZ-11BLDS0        disk
+sde      16.4T WDC WD180EDGZ-11BLDS0        disk
+sdf      28.7G Cruzer Glide                 disk
+sdg      16.4T WDC WD180EDGZ-11B2DA0        disk
+sdh      16.4T WDC WD180EDGZ-11B2DA0        disk
+sdi      16.4T WDC WD180EDGZ-11B2DA0        disk
+sdj      16.4T WDC WD180EDGZ-11B2DA0        disk
+sdk      16.4T WDC WD180EDGZ-11B2DA0        disk
+sdl      16.4T WDC WD180EDGZ-11B2DA0        disk
+sdm      16.4T WDC WD180EDGZ-11B2DA0        disk
+sdn      16.4T WDC WD180EDGZ-11B2DA0        disk
+md1p1    10.9T                              md
+md2p1    10.9T                              md
+md3p1    16.4T                              md
+md4p1    12.7T                              md
+md5p1    16.4T                              md
+md6p1    16.4T                              md
+md7p1    16.4T                              md
+md8p1    16.4T                              md
+md9p1    16.4T                              md
+md10p1   16.4T                              md
+md11p1   16.4T                              md
+md12p1   16.4T                              md
+md13p1   16.4T                              md
+zram0       0B                              disk
+nvme1n1   1.8T WD_BLACK SN7100 2TB          disk
+nvme3n1   1.8T Samsung SSD 970 EVO Plus 2TB disk
+nvme2n1   1.8T Samsung SSD 990 EVO Plus 2TB disk
+```
 
-| Pool | Device | Size | Used | Notes |
-|---|---|---|---|---|
-| `cache` | WD_BLACK SN7100 2TB | 5.45 TB (zfs report) | 1.85 TB (28%) | Primary cache, ZFS, ONLINE |
-| `cache2` | Samsung 970 EVO Plus 2TB | — | ~0% | Spare / future use |
-| `cache3` | Samsung 990 EVO Plus 2TB | — | ~0% | Spare / future use |
+### ZFS Pools
 
-> Note: the "5.45 TB" size on `cache` exceeds the 2 TB physical drive — this suggests cache may be configured as a multi-device ZFS pool or includes compression accounting. Worth verifying.
+#### tootie
 
-### tootie — Unraid Shares (`/mnt/user/`)
+| Pool | Size | Allocated | Free | Frag | Health |
+|---|---|---|---|---|---|
+| cache | 5.45T | 1.85T | 3.61T | 28% | ONLINE |
 
-| Share | Comment | Color | Cache |
-|---|---|---|---|
-| `3d` | GCodes, Models, Projects | green | — |
-| `appdata` | application data | green | — |
-| `archive` | archived code & session logs | green | — |
-| `backups` | primary homelab backup target | **yellow** (high util) | — |
-| `bin` | — | green | — |
-| `code` | Code Repositories | green | — |
-| `code-server` | code-server dev env | green | — |
-| `compose` | production docker compose projects | green | — |
-| `data` | apps, audio, books, comics, movies, music, tv | **yellow** | — |
-| `docs` | homelab log & documentation | green | — |
-| `domains` | VM images | green | — |
-| `downloads` | Synced device downloads | green | — |
-| `games` | PC games, ROMs & emulation | **yellow** | — |
-| `isos` | "4real linux isos" | green | — |
-| `photos` | immich libraries | green | — |
-| `playbooks` | ansible playbooks | green | — |
-| `system` | docker & libvirt | green | — |
-| `workspace` | projects in development | green | — |
+#### squirts
 
-### tootie — Notable ZFS Datasets
+| Pool | Size | Allocated | Free | Frag | Health |
+|---|---|---|---|---|---|
+| bpool | 1.88G | 1.25G | 636M | 53% | ONLINE |
+| rpool | 920G | 178G | 742G | 46% | ONLINE |
 
-Heavy hitters on `cache/` (in `/mnt/cache/`):
+#### shart
 
-| Dataset | Used | Notes |
-|---|---|---|
-| `cache/appdata/plex` | 660 GB | Plex metadata + cache |
-| `cache/photos/library` | 94.6 GB | Immich photos |
-| `cache/system` | 88.5 GB | Docker + libvirt |
-| `cache/workspace` | 82.4 GB | Dev projects |
-| `cache/workspace/reader` | 45.9 GB | "reader" project |
-| `cache/compose/pulse` | 11.1 GB | autopulse project |
-| `cache/compose/better-chatbot` | 2.16 GB | |
-| `cache/domains/Home Assistant` | 12.7 GB | HA VM image |
-| `cache/code-server` | 12.3 GB | code-server data |
-| `cache/appdata/radarr` | 13.0 GB | |
-| `cache/appdata/sonarr` | 12.2 GB | |
-| `cache/appdata/sabnzbd` | 9.15 GB | |
-| `cache/workspace/hive` | 17.3 GB | hive project |
-| `cache/workspace/nugget` | 10.3 GB | nugget project |
-
-### shart — Backup Pool
-
-| Pool | Size | Used | Frag | Health |
-|---|---|---|---|---|
-| `backup` | 7.27 TB | 1.80 TB | 20% | ONLINE |
-
-Holds backup targets at:
-- `backup/tootie/cache_*` (every tootie dataset replicated)
-- `backup/squirts/rpool_*` (compose + appdata)
-
-### squirts — ZFS
-
-| Pool | Size | Used | Health |
-|---|---|---|---|
-| `bpool` | 1.88 GB | 1.25 GB | ONLINE |
-| `rpool` | 920 GB | 176 GB | ONLINE |
-
----
-
-## Backup Strategy
-
-**Stack:** Sanoid (snapshots) + Syncoid (ZFS send/receive)
-
-**Schedule:** Nightly snapshot + replication. Last successful run was not reverified during the 2026-05-22 refresh; the previous live sweep saw success messages for **2026-03-30 04:00-04:10 AM**.
-
-### Replication Chains
-
-| Source | Target | Datasets |
-|---|---|---|
-| `tootie` (Unraid) | `shart` | `cache/appdata`, `cache/compose`, `cache/workspace`, `cache/photos`, `cache/domains`, `cache/code-server`, `cache/code`, `cache/docs`, `cache/archive`, `cache/bin`, `cache/3d`, `cache/downloads`, `cache/playbooks` |
-| `squirts` | `shart` | `rpool/compose/*`, `rpool/appdata/*` |
-
-The March sweep reported clean recent Sanoid + Syncoid success messages via Gotify. Refresh backup job logs before relying on current backup health.
-
-### Backup Strengths
-- True ZFS send/receive (not rsync) — atomic, fast, snapshot-aware
-- Off-host replication target (shart) physically separate
-- Daily snapshots with retention via Sanoid
-
-### Backup Gaps
-- No off-site replication (everything is on-LAN)
-- shart has a normal LAN address (`10.1.0.3`) plus the old link-local `169.254.80.235` on `shim-br0`; document which path Syncoid actually uses.
-
----
+| Pool | Size | Allocated | Free | Frag | Health |
+|---|---|---|---|---|---|
+| backup | 7.27T | 1.80T | 5.47T | 20% | ONLINE |
 
 ## Reverse Proxy & Public Services
 
-**SWAG** (LinuxServer.io) on `squirts` — **149 active proxy configs** as of 2026-05-22.
+SWAG is expected on `squirts`. Active proxy config count is generated from `/mnt/appdata/swag/nginx/proxy-confs`.
 
-All services are exposed via `*.tootie.tv` subdomains, fronted by **Authelia** for authentication.
-
-### Sample exposed services (incomplete — 149 total)
-
-**Media:**
-`plex`, `sonarr`, `radarr`, `prowlarr`, `bazarr`, `overseerr`, `tautulli`, `sabnzbd`, `qbittorrent`, `audiobookshelf`, `kavita`, `navidrome`, `feishin`, `immich`, `wrapperr`, `popcorn`
-
-**AI / RAG:**
-`axon`, `neo4j`, `neo4j-memory`, `tei`, `ollama`, `qdrant`, `rag`, `optimus`, `agents`, `ngent`, `better-chatbot`, `nugget`, `promptstash`, `context-forge`
-
-**MCP:**
-`synapse`, `syslog-mcp`, `swag-mcp`, `mcp-auth`, `mcpx`
-
-**Infrastructure:**
-`portainer`, `code-server`, `firefox`, `dockge`, `dozzle`, `glances`, `scrutiny`, `vnstat`, `homarr`, `crontab-ui`, `olivetin`, `lab`, `unraid`, `tailscale`, `unifi`
-
-**Productivity:**
-`vaultwarden`, `joplin`, `linkding`, `karakeep`, `freshrss`, `paperless`, `memos`, `radicale`, `homebox`, `bytestash`, `opengist`
-
-**Storage / Files:**
-`minio`, `zipline`, `syncthing`, `filebrowser`, `filestash`
-
-**Custom/business:**
-`scbdb` (likely THC-Intel related), `taboot`
-
-### Authentication: Authelia
-
-- Backed by MariaDB + Redis (both on squirts)
-- Fronts most internal services via `auth_request` directive in SWAG configs
-- Default policy: 2FA required for sensitive services
-
----
-
-## Service Catalog
-
-### Media Stack (tootie)
-
-| Service | Purpose | Notes |
-|---|---|---|
-| Plex | Media server | 660 GB appdata, nightly Tautulli reports |
-| Sonarr | TV automation | nightly tag |
-| Radarr | Movie automation | nightly tag |
-| Bazarr | Subtitles | |
-| Prowlarr | Indexer aggregator | |
-| Sabnzbd | Usenet downloader | 9.15 GB appdata |
-| qBittorrent | Torrent client | |
-| Tautulli | Plex analytics | |
-| Audiobookshelf | Audiobook server | |
-| Kavita | Comics/manga server | |
-| Navidrome | Music server | 3.10 GB |
-| Feishin | Navidrome web client | |
-| Wrapperr | Plex Wrapped year-in-review | |
-| Plex-TVTime | Sync watch history | |
-| Autopulse | Plex/Sonarr/Radarr scan automation | + postgres |
-| Tracearr | Plex viewing analytics | |
-| Shelfmark | Reading tracker | |
-| Immich | Photo backup (94.6 GB library) | + postgres + redis + ML cache |
-
-### Databases & Caches
-
-| Service | Where | Notes |
-|---|---|---|
-| Postgres 14 | tootie | 138 MB |
-| Postgres 15 | tootie | 92.6 MB |
-| Postgres 16 | (referenced) | |
-| Postgres 17 | tootie (`arcane_postgres`) | dookie Axon stack currently does not expose a Postgres container |
-| MariaDB | tootie | |
-| MySQL | tootie | |
-| Redis (multiple) | tootie + squirts | |
-| TimescaleDB | tootie (hive + tracearr) | |
-| Neo4j 2025.10.1 | tootie (pulse_neo4j) | + axon neo4j |
-| Qdrant 1.13.1 | dookie (axon) + steamy (GPU) | |
-| MinIO | tootie | S3-compatible object store |
-| Elasticsearch | squirts (historical syslog-ng stack) | not observed in 2026-05-22 `docker ps` |
-
-### Infrastructure
-
-| Service | Where | Notes |
-|---|---|---|
-| Portainer | squirts + shart agents; public config exists | full server not observed on tootie in 2026-05-22 `docker ps` |
-| Watchtower | tootie | historical; not observed in 2026-05-22 `docker ps` |
-| Glances | tootie | System monitor |
-| Scrutiny | tootie | SMART monitoring |
-| Vnstat | tootie | Bandwidth tracking |
-| Diskspeed | tootie | |
-| AdGuard Home | squirts | DNS-level ad blocking |
-| code-server | tootie | historical/public config; not observed in 2026-05-22 `docker ps` |
-| Firefox | tootie | historical/public config; not observed in 2026-05-22 `docker ps` |
-| sshwifty | tootie | public config; not observed in 2026-05-22 `docker ps` |
-| Dockge | squirts | Compose UI |
-| Dozzle | squirts | Container log viewer |
-| Olivetin | tootie | Button-based scripts |
-| Crontab UI | tootie | |
-| Notifiarr | tootie | Discord notifier |
-| Infisical | tootie | public config; not observed in 2026-05-22 `docker ps` |
-| Homebox | tootie | public config; not observed in 2026-05-22 `docker ps` |
-| Homarr | tootie | public config; not observed in 2026-05-22 `docker ps` |
-| Loggifly | tootie | observed as `ghcr.io/clemcer/loggifly:v1.4.0` |
-| Change Detection | tootie | public config; not observed in 2026-05-22 `docker ps` |
-| Syncthing | tootie | public config; not observed in 2026-05-22 `docker ps` |
-| Esphome | tootie | public config; not observed in 2026-05-22 `docker ps` |
-| Apprise-API | tootie | Multi-target notifications |
-
-### Productivity / Personal
-
-| Service | Where |
+| Metric | Value |
 |---|---|
-| Joplin Server | tootie (+ postgres), historical/public config; not observed in 2026-05-22 `docker ps` |
-| Vaultwarden | squirts |
-| FreshRSS | squirts (+ postgres), historical/public config; not observed in 2026-05-22 `docker ps` |
-| Linkding (bookmarks) | squirts |
-| Karakeep | squirts |
-| Memos | squirts |
-| Paperless-ngx | squirts (+ postgres + AI) |
-| Radicale (calendar) | squirts |
-| Searxng | squirts |
-| Bytestash (snippets) | squirts |
-| Opengist | squirts |
-| Wizarr | squirts |
-| RustDesk | squirts |
-| Multi-scrobbler | squirts |
-| Maloja | squirts |
-
----
+| Active config files | 149 |
+| First 80 config-derived service names | `adguard-unbound`, `adminer`, `affine`, `agent-os`, `agents`, `agor`, `agregarr`, `api`, `apprise`, `arcane`, `audiobookshelf`, `aurora-design`, `auth-dinglebear`, `authelia`, `axon`, `bazarr`, `better-chatbot`, `big-agi`, `bolt`, `bookstack`, `bytestash`, `callback`, `changedetection`, `chrome-devtools`, `claude`, `clawdbot`, `cli-api`, `code-server-wildcard`, `code-server`, `comfyui`, `composecraft`, `context-forge`, `crontab-ui`, `dashboard`, `dcm`, `diskspeed`, `dockge`, `dockpeek`, `dozzle`, `esphome`, `fc-bridge`, `feishin`, `firecrawl`, `firefox`, `freshrss`, `ghbd`, `glances`, `gocron`, `gomft`, `gotify`, `homeassistant`, `homebox`, `homelab`, `immich`, `infisical`, `it-tools`, `jellyfin`, `joplin`, `karakeep`, `kavita`, `lab`, `linkding`, `maloja`, `mcp-auth`, `mcp`, `mcpx`, `mem0`, `memos`, `mesh`, `minio-s3-api`, `minio-web`, `multi-scrobbler`, `navidrome`, `neo4j-memory`, `neo4j`, `ngent`, `nonexistent.conf`, `notifiarr`, `nugget`, `obsidian-api` |
 
 ## AI / RAG / Agent Stack
 
-### Axon — Knowledge / RAG System (dookie)
+### Axon on dookie
 
-Network: `axon`
+| Container | Image | Ports | Status |
+|---|---|---|---|
+| agentmemory-iii-engine-1 | iiidev/iii:0.11.2 | 127.0.0.1:3111-3112->3111-3112/tcp, 127.0.0.1:9464->9464/tcp, 127.0.0.1:49134->49134/tcp | Up 2 days |
+| axon | axon:dev-runtime | 0.0.0.0:8001->8001/tcp | Up 18 hours (healthy) |
+| axon-chrome | axon-axon-chrome | 0.0.0.0:6000->6000/tcp, [::]:6000->6000/tcp, 0.0.0.0:9222-9223->9222-9223/tcp, [::]:9222-9223->9222-9223/tcp | Up 29 hours (healthy) |
+| axon-qdrant | qdrant/qdrant:v1.13.1 | 0.0.0.0:53333->6333/tcp, [::]:53333->6333/tcp, 0.0.0.0:53334->6334/tcp, [::]:53334->6334/tcp | Up 29 hours (healthy) |
+| axon-tei | ghcr.io/huggingface/text-embeddings-inference:89-1.9 | 0.0.0.0:52000->80/tcp, [::]:52000->80/tcp | Up 29 hours (healthy) |
+| labby | labby:dev | 0.0.0.0:8765->8765/tcp, [::]:8765->8765/tcp | Up 10 hours |
 
-| Component | Image | Purpose |
-|---|---|---|
-| `axon` | axon:dev-runtime | Axon API/runtime on port 8001 |
-| `axon-qdrant` | qdrant 1.13.1 | Vector store |
-| `axon-tei` | HuggingFace TEI 89-1.9 | Embeddings: **Qwen/Qwen3-Embedding-0.6B** (float16) |
-| `axon-chrome` | headless Chrome | Web scraping |
+### GPU Inference on steamy
 
-**Pipeline (per memory):** Spider.rs crawler (~120 pages/sec) → Qwen3-Embedding-0.6B (TEI) → Qdrant + Postgres + Neo4j → exposed via REST + MCP.
-
-**Active corpora:** ACP, MCP, Claude Code documentation.
-
-Historical issues from March/May sessions: `403: requires scope axon:write` on some ingest flows and occasional Axon health check failures via SWAG at `axon.tootie.tv`. Reverify before treating either as current.
-
-### GPU Inference (steamy)
-
-- `crawl4r-qdrant` using `qdrant:gpu-nvidia-latest` build — secondary GPU-accelerated vector store on RTX 4070
-
-### Other AI / Agent Services
-
-| Service | Where | Notes |
-|---|---|---|
-| `better-chatbot` | tootie | public config exists; not observed in 2026-05-22 `docker ps` |
-| `cli-proxy-api` | tootie | Present as `eceasy/cli-proxy-api:latest`; previous CVE note should be revalidated before action |
-| `mcp-oauth-gateway` | squirts | OAuth 2.1 for MCP servers (159 MB) |
-| `mcphub` | tootie | MCP server registry (+ db, 19 MB) - not observed in 2026-05-22 `docker ps` |
-| `mcp-context-forge` | tootie | public config exists; not observed in 2026-05-22 `docker ps` |
-| Open WebUI | tootie | not observed in 2026-05-22 `docker ps` |
-| Affine | tootie | public SWAG config exists; container not observed in 2026-05-22 tootie `docker ps` |
-
----
+| Container | Image | Ports | Status |
+|---|---|---|---|
+| crawl4r-qdrant | qdrant/qdrant:gpu-nvidia-latest | 0.0.0.0:52001->6333/tcp, [::]:52001->6333/tcp, 0.0.0.0:52002->6334/tcp, [::]:52002->6334/tcp | Up 30 hours (healthy) |
 
 ## MCP Server Ecosystem
 
-Jacob's homelab is also an MCP server farm. Notable MCP servers:
+| MCP server | Host | Port | Observed image | Status |
+|---|---|---|---|---|
+| syslog-mcp | dookie | 1514 TCP/UDP, 3100 HTTP | ghcr.io/jmagar/syslog-mcp:0.27.1 | Up 30 hours (healthy) |
+| arcane-mcp | dookie | 44332 | arcane-mcp-arcane-mcp | Up 2 days (healthy) |
+| unraid-mcp | dookie | 40010 | unrust:dev | Up 2 days (healthy) |
+| gotify-mcp | dookie | 40020 | rustify:dev | Up 2 days (healthy) |
+| unifi-mcp | dookie | 40030 | rustifi:dev | Up 2 days (healthy) |
+| tailscale-mcp | dookie | 40040 | rustscale:dev | Up 2 days (healthy) |
+| apprise-mcp | dookie | 40050 | apprise-mcp:dev | Up 2 days (healthy) |
+| example-mcp | dookie | 40060 | rmcp-template:dev | Up About an hour (healthy) |
+| swag-mcp | squirts | 8012 localhost binding | ghcr.io/jmagar/swag-mcp:1.1.6 | Up 2 days (healthy) |
 
-| MCP Server | Host | Port | Notes |
-|---|---|---|---|
-| `synapse-mcp` | dookie | 3000 | Historical SSH relay + ACP adapter; not observed in 2026-05-22 dookie `docker ps` |
-| `syslog-mcp` | dookie | 1514 (TCP/UDP), 3100 (HTTP) | Rust + SQLite + FTS5 |
-| `arcane-mcp` | dookie | 44332 | Docker fleet management |
-| `arcane-agent` | tootie, dookie, squirts, shart, steamy, vivobook | — | Per-node agent (manages compose projects) |
-| `unraid-mcp` | dookie | 40010 | unRAID GraphQL bridge |
-| `swag-mcp` | squirts | 8012 (localhost binding) | SWAG config management |
-| `unifi-mcp` | dookie | 40030 | UniFi controller bridge |
-| `gotify-mcp` | dookie | 40020 | Gotify bridge |
-| `tailscale-mcp` | dookie | 40040 | Tailscale bridge |
-| `apprise-mcp` | dookie | 40050 | Apprise bridge |
-| `example-mcp` | dookie | 40060 | RMCP template/example |
-| `overseerr-mcp` | squirts | — | Historical; not observed in 2026-05-22 `docker ps` |
-| `chroma-mcp`, `qbittorrent-mcp`, `radarr-mcp`, `sonarr-mcp`, `prowlarr-mcp`, `tautulli-mcp`, `sabnzbd-mcp`, `plex-mcp`, `portainer-mcp`, `tubearchivist-mcp`, `shrimp-mcp`, `memory-bank-mcp`, `fastfs-mcp`, `yarr-mcp` | tootie | — | Various |
+## Backup Strategy
 
-**Synapse architecture:** Rust/Axum ACP gateway exposing local agents over REST+SSE with an OpenAI-compatible shim. Bridges Claude Code, Codex CLI to remote/web clients.
+- `shart` is the ZFS receive target.
+- Backup job freshness is not inferred by this script. Check Sanoid/Syncoid logs or Gotify notifications before relying on current backup health.
+- `shart` currently reports these ZFS pools:
 
-**arcane-agent version drift:** resolved for observed agents. tootie, dookie, squirts, shart, steamy-wsl, and vivobook-wsl report Arcane Agent image version **v1.19.4** or matching latest digest in 2026-05-22 checks. Arcane still lists the `steamy` environment itself as disabled/offline.
-
----
+| Pool | Size | Allocated | Free | Frag | Health |
+|---|---|---|---|---|---|
+| backup | 7.27T | 1.80T | 5.47T | 20% | ONLINE |
 
 ## Monitoring & Notifications
 
-### Syslog (Rust-based syslog-mcp on dookie)
-
-- Centralized log collection across primary hosts
-- Storage: SQLite + FTS5
-- Runtime counters: **5.82M entries written** as of 2026-05-22T23:48Z
-- Docker ingest: 89 active container streams across 3 Docker hosts
-- Host table (current syslog DB): squirts 7.39M, tootie 2.20M, dookie 795K, vivobook 80.5K, shart/SHART 40.4K combined, STEAMY 1.5K, router 3
-- Current top emitter is **squirts**, not dookie.
-
-### Gotify (squirts) — 19 Notification Apps
-
-`Sonarr`, `Radarr`, `Prowlarr`, `Tautulli`, `unRAID` (tootie), `unRAID-shart`, `Bazarr`, `Apprise`, `ChangeDetection`, `Rclone`, `Overseerr`, `ZFS`, `autopulse`, `Synapse`, `Loggifly`, `clawd`, `Shelfmark`, `Arcane`, `Tracearr`
-
-Recent notification stream not refreshed on 2026-05-22. The March snapshot was clean and mostly Sanoid/Syncoid success messages.
-
-### Unraid Notifications
-
-Not refreshed on 2026-05-22. The March snapshot had 20+ unread INFO backup-related notifications.
-
----
+- `syslog-mcp` is expected on dookie at ports 1514 and 3100.
+- Gotify is expected on squirts.
+- This generator does not query application APIs or notification contents; it records container and host state only.
 
 ## Virtual Machines
 
-Running on tootie via libvirt/KVM:
-
-| VM | State | UUID | Notes |
-|---|---|---|---|
-| `dookie` | **RUNNING** | `95dda7eb-dbde-b679-f68f-d9c322daca7c` | Production dev VM; SSH verified 2026-05-22 |
-| `Discovery` | (image present, 3.60 GB) | — | |
-| `Home Assistant` | SHUTOFF | `e80cdd76-345a-4445-ba38-b4458451e532` | 12.7 GB image |
-| `steamy` | SHUTOFF | `8dce4b2f-8d26-742a-215a-dc9ab9add6ca` | (real `steamy` is bare-metal Win11) |
-| `steamy-vnc` | SHUTOFF | `03613256-a3b9-9a5a-799f-93dc56cb4d45` | |
-| `Ubuntu` | (image present, 202K) | — | |
-| `testbed` | (image present, 128K) | — | |
-
----
+- `dookie` is treated as the active Linux KVM guest hosted on tootie.
+- VM inventory is not inferred by this script yet. Add `virsh list --all` collection on tootie if VM state needs to be authoritative here.
 
 ## Security Posture
 
-### Container Vulnerability Scan (via Arcane Trivy integration)
+- Public entrypoint: SWAG on squirts.
+- Inter-node access: Tailscale and LAN SSH aliases.
+- Vulnerability scan data is not generated here. Run Arcane/Trivy before acting on CVE status.
+- tootie parity status is collected above; an empty parity slot remains a critical risk when observed.
 
-Not refreshed on 2026-05-22. The table below is the previous March snapshot and should be treated as stale until a new Arcane vulnerability summary is run.
+## Known Issues & Follow-Up Checks
 
-| Node | Images | Critical | High | Medium | Low | Total |
-|---|---|---|---|---|---|---|
-| tootie | 62 | **185** | 3,019 | 15,429 | 4,119 | 22,884 |
-| dookie | 15 | 16 | 204 | 443 | 741 | 1,417 |
-| steamy | 5 | 10 | 106 | 410 | 345 | 879 |
-| shart | — | — | — | — | — | — |
-| squirts | — | — | — | — | — | — |
-| **Total** | **82** | **211** | **3,329** | **16,282** | **5,205** | **25,180** |
-
-**Previous highest-risk container:** `cli-proxy-api` on tootie. It is still running, but the vulnerability result was not refreshed on 2026-05-22.
-
-### Authentication / Access
-
-- All public-facing services behind SWAG + Authelia (2FA)
-- Tailscale mesh for inter-node SSH access (no public SSH)
-- SSH keys: ED25519 (`SHA256:1zMWu3LJd4ETzBOp7gV1Pdi4I3A2P5osYigv/LRCUxU` is the primary)
-- Infisical for application secrets management
-
-### Network Security
-
-- AdGuard Home for DNS-level filtering on `WillyNet`
-- WPA2-PSK for WiFi (consider WPA3 transition)
-- No exposed inbound ports except via SWAG → Authelia gate
-
----
-
-## Known Issues & Tech Debt
-
-### 🔴 Critical
-
-1. **NO PARITY DISK on tootie array.** `mdcmd status` shows empty parity slots and `mdNumDisabled=2`; 13 spinning data disks are mounted with zero parity. Any drive failure = permanent data loss for that disk's content. **Action:** Add an 18TB+ parity disk ASAP. Cost ~$300.
-
-2. **tootie array at 92% utilization (182 / 199 TiB).** Disks were not individually usage-refreshed, but the array-level pressure is worse than the March 89% snapshot. **Action:** Expand or prune `data` share (largest consumer).
-
-3. **`cli-proxy-api` container on tootie still present.** It is now `eceasy/cli-proxy-api:latest` and has been up 2 days; rerun vulnerability scan to confirm whether the prior critical CVE finding still applies. **Action:** Update/remove if scan remains critical.
-
-### 🟡 Warnings
-
-4. **Arcane marks `steamy` disabled/offline.** SSH to `steamy-wsl` works and `crawl4r-qdrant` is running, but Arcane environment status is disabled/offline. **Action:** Re-register or intentionally document why Arcane does not manage the GPU box.
-
-5. **shart still has link-local `169.254.80.235` even though LAN `10.1.0.3` is up.** Either intentional direct-interface history or leftover config. **Action:** Document the Syncoid target path and remove confusion.
-
-6. **squirts RAM pressure remains meaningful.** Current sample shows 10 GiB / 14 GiB used while running 37 containers. **Action:** Watch memory and consider migrating heavier services if swap or OOM events appear.
-
-7. **Axon health through SWAG has had prior failures at `axon.tootie.tv`.** Not reproduced in this refresh. **Action:** Reverify before changing SWAG/Axon config.
-
-8. **Axon `403: requires scope axon:write`** when ingesting OpenAI Codex repo. **Action:** Audit OAuth scopes on `mcp-oauth-gateway`.
-
-9. **Parity check history is stale while no parity disk is assigned.** Schedule monthly parity checks once a disk is added.
-
-10. **Syslog hostname pollution.** Recent entries show malformed hostnames (`dook`, `dooki`, `doo`, `do`, `d`) from debugging — these are noise in the FTS index.
-
-### 🟢 Nice-to-haves
-
-11. **No off-site backup.** shart is on-LAN. Consider Backblaze B2 / rclone for irreplaceable data (photos, code).
-12. **Cache pools 2 + 3 (Samsung 970 + 990) appear empty.** Could be used for additional services or moved to RAID for cache redundancy.
-13. **5 SHUTOFF VMs taking up domain image space.** Cull unused VM images.
-14. **`cache/archive/*` has dozens of micro-datasets (mostly 128K each) from old MCP project experiments.** Worth pruning to reduce dataset count and snapshot overhead.
-
----
+- If tootie parity excerpt shows `diskName.0=` or `diskSize.0=0`, parity is not assigned.
+- If Arcane marks a host offline but SSH works, reconcile Arcane environment registration.
+- If an expected service appears under "not observed", check whether it moved, stopped, or changed container name.
+- Confirm backup freshness from Sanoid/Syncoid logs; this report does not prove backup success.
 
 ## Appendix: Key URLs
-
-### Internal (LAN / Tailscale)
 
 | Service | URL |
 |---|---|
 | Unraid Web UI | http://10.1.0.2:6969 |
-| Synapse MCP | http://dookie:3000 (historical; not observed in 2026-05-22 `docker ps`) |
 | Syslog MCP | http://dookie:3100 |
-| Arcane UI | http://10.1.0.2:3552 / https://arcane.tootie.tv |
+| Arcane UI | https://arcane.tootie.tv |
 | Arcane MCP | http://dookie:44332 |
 | Unraid MCP | http://dookie:40010 |
 | Plex | http://10.1.0.2:32400 |
-| Portainer | http://10.1.0.2:9000 (historical/public config; server not observed in 2026-05-22 tootie `docker ps`) |
-| Glances | http://10.1.0.2:61208 |
-| Scrutiny | http://10.1.0.2:8080 |
-| Windows sandbox (winbox/noVNC) | http://dookie:8006 |
-| Windows sandbox (RDP) | dookie:33890 |
-
-### Public (via SWAG -> Authelia)
-
-Format: `https://<service>.tootie.tv`
-
-All 149 active SWAG configs follow this pattern. Notable examples:
-- `https://plex.tootie.tv`
-- `https://overseerr.tootie.tv`
-- `https://immich.tootie.tv`
-- `https://axon.tootie.tv` (⚠ health check failing)
-- `https://synapse.tootie.tv`
-- `https://agents.tootie.tv`
-- `https://better-chatbot.tootie.tv`
-
----
-
-*Document generated from live MCP introspection of Arcane, SWAG, Syslog, and SSH host checks. Some March 2026 sections remain intentionally marked as stale where the live endpoint failed or where a safe refresh was not performed.*
+| Windows sandbox noVNC | http://dookie:8006 |
+| Windows sandbox RDP | dookie:33890 |
