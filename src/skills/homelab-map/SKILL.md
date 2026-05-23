@@ -62,6 +62,8 @@ Read `~/.homelab/homelab.md` or `~/.homelab/homelab.json` whenever you need:
 python3 src/skills/homelab-map/scripts/generate-homelab-report.py
 ```
 
+By default, the generator also starts or reuses a localhost viewer on `127.0.0.1:8787`, checks `tailscale status`, and attempts Tailscale Serve on HTTPS port `8447` only if Tailscale is installed and usable. Use `--no-serve` when you only want files.
+
 The generator uses non-interactive SSH, Docker CLI, ZFS CLI, Unraid shell commands, and SWAG config files. Treat container counts, RAM%, uptime numbers etc. as **point-in-time** — re-run the generator before acting on anything that depends on current state. Names of nodes, roles, and architectural choices are stable; individual IPs and ports should still be verified before automation.
 
 If a stable architectural fact changes (node renamed, service permanently moved, critical port changed), update `scripts/generate-homelab-report.py` and/or the template in `references/homelab.md`, then regenerate `~/.homelab` artifacts. Keep this overview aligned with the generated report.

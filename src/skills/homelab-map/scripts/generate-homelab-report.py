@@ -12,8 +12,11 @@ import argparse
 import datetime as dt
 import html
 import json
+import shutil
+import socket
 import subprocess
 import sys
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
@@ -25,6 +28,8 @@ DEFAULT_DIR = Path.home() / ".homelab"
 DEFAULT_OUTPUT = DEFAULT_DIR / "homelab.md"
 DEFAULT_JSON_OUTPUT = DEFAULT_DIR / "homelab.json"
 DEFAULT_HTML_OUTPUT = DEFAULT_DIR / "index.html"
+DEFAULT_SERVE_PORT = 8787
+DEFAULT_TAILSCALE_HTTPS_PORT = 8447
 
 
 @dataclass(frozen=True)
@@ -805,6 +810,87 @@ def render_html_viewer(payload: dict[str, object]) -> str:
 """
 
 
+def is_tcp_port_open(host: str, port: int) -> bool:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.settimeout(0.5)
+        return sock.connect_ex((host, port)) == 0
+
+
+def ensure_local_viewer_server(directory: Path, port: int) -> tuple[bool, str]:
+    if is_tcp_port_open("127.0.0.1", port):
+        return True, f"Local viewer server already listening at http://127.0.0.1:{port}/"
+
+    log_path = directory / "http-server.log"
+    log_file = log_path.open("ab")
+    try:
+        subprocess.Popen(
+            [
+                sys.executable,
+                "-m",
+                "http.server",
+                str(port),
+                "--bind",
+                "127.0.0.1",
+                "--directory",
+                str(directory),
+            ],
+            stdout=log_file,
+            stderr=subprocess.STDOUT,
+            close_fds=True,
+            start_new_session=True,
+        )
+    except OSError as exc:
+        log_file.close()
+        return False, f"Could not start local viewer server: {exc}"
+    else:
+        log_file.close()
+
+    time.sleep(0.4)
+    if is_tcp_port_open("127.0.0.1", port):
+        return True, f"Started local viewer server at http://127.0.0.1:{port}/"
+    return False, f"Local viewer server did not start; see {log_path}"
+
+
+def tailscale_is_usable() -> tuple[bool, str]:
+    tailscale = shutil.which("tailscale")
+    if not tailscale:
+        return False, "tailscale command not found; skipping Tailscale Serve."
+
+    status = run_local([tailscale, "status"], timeout=10)
+    if not status.ok:
+        detail = status.stderr or status.stdout or str(status.returncode)
+        return False, f"tailscale status failed; skipping Tailscale Serve: {detail}"
+    return True, tailscale
+
+
+def try_tailscale_serve(local_port: int, https_port: int) -> tuple[bool, str]:
+    ok, detail = tailscale_is_usable()
+    if not ok:
+        return False, detail
+
+    tailscale = detail
+    target = f"http://127.0.0.1:{local_port}"
+    serve = run_local(
+        [tailscale, "serve", "--https", str(https_port), "--bg", "--yes", target],
+        timeout=15,
+    )
+    if serve.ok:
+        return True, serve.stdout or f"Tailscale Serve is proxying HTTPS port {https_port} to {target}"
+    return False, f"tailscale serve failed: {serve.stderr or serve.stdout or serve.returncode}"
+
+
+def maybe_serve_viewer(directory: Path, local_port: int, tailscale_https_port: int) -> None:
+    local_ok, local_message = ensure_local_viewer_server(directory, local_port)
+    print(local_message, file=sys.stderr)
+    if not local_ok:
+        return
+
+    tailscale_ok, tailscale_message = try_tailscale_serve(local_port, tailscale_https_port)
+    print(tailscale_message, file=sys.stderr)
+    if tailscale_ok:
+        print(f"Tailnet viewer requested on HTTPS port {tailscale_https_port}.", file=sys.stderr)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate the WillyNet homelab report artifacts.")
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT, help=f"Output file. Default: {DEFAULT_OUTPUT}")
@@ -813,6 +899,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--template", type=Path, default=DEFAULT_TEMPLATE, help=f"Template file. Default: {DEFAULT_TEMPLATE}")
     parser.add_argument("--no-json", action="store_true", help="Do not write the JSON artifact.")
     parser.add_argument("--no-html", action="store_true", help="Do not write the HTML viewer artifact.")
+    parser.add_argument("--no-serve", action="store_true", help="Do not start or update the local/Tailscale viewer service.")
+    parser.add_argument("--serve-port", type=int, default=DEFAULT_SERVE_PORT, help=f"Local viewer HTTP port. Default: {DEFAULT_SERVE_PORT}")
+    parser.add_argument("--tailscale-https-port", type=int, default=DEFAULT_TAILSCALE_HTTPS_PORT, help=f"Tailscale Serve HTTPS port. Default: {DEFAULT_TAILSCALE_HTTPS_PORT}")
     parser.add_argument("--stdout", action="store_true", help="Print report instead of writing it.")
     parser.add_argument("--no-write", action="store_true", help="Collect and render, but do not write the output file.")
     return parser.parse_args()
@@ -848,6 +937,8 @@ def main() -> int:
             written.append(html_output)
         for path in written:
             print(path)
+        if not args.no_serve and not args.no_html:
+            maybe_serve_viewer(args.html_output.resolve().parent, args.serve_port, args.tailscale_https_port)
     elif args.no_write:
         print("Rendered report without writing.", file=sys.stderr)
 
