@@ -10,5 +10,6 @@ Invoke this skill when the user request matches the trigger conditions in `SKILL
 
 - `SKILL.md` - agent workflow and trigger guidance
 - `agents/` - OpenAI runtime metadata
+- `references/tooling.md` - setup commands, platform notes, and coordinate handling details
 - `README.md` - packaging overview
 - `CHANGELOG.md` - packaging change history

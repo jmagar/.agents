@@ -1,4 +1,4 @@
 interface:
   display_name: "Claude In Mobile"
-  short_description: "Controlling or testing Android devices, iOS Simulators, macOS..."
-  default_prompt: "Use $claude-in-mobile for controlling or testing Android devices, iOS Simulators, macOS."
+  short_description: "Automate device, desktop, browser, and store workflows"
+  default_prompt: "Use $claude-in-mobile to inspect and test an Android, iOS Simulator, desktop, or browser workflow."

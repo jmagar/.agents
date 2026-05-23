@@ -1,22 +1,34 @@
 ---
 name: claude-in-mobile
-description: Use when controlling or testing Android devices, iOS Simulators, macOS desktop apps, Aurora OS devices, Chrome/Chromium browser sessions, or app-store releases through the claude-in-mobile MCP server or native CLI.
+description: Use when the user wants to use claude-in-mobile, its MCP server, or its native CLI to automate Android devices/emulators, iOS Simulators, Aurora OS devices, macOS desktop apps, Chrome/Chromium CDP sessions, screenshots/logs, UI inspection, accessibility or visual checks, multi-device flows, or app-store release operations.
 ---
 
 # Claude in Mobile
 
-Use this skill for Claude Mobile and `claude-in-mobile` MCP workflows.
+Use this skill for `claude-in-mobile` MCP and native CLI workflows.
 
 ## What It Is
 
-`claude-in-mobile` is an MCP server and native CLI for automating Android,
-iOS Simulator, macOS desktop apps, Aurora OS devices, browser sessions, and app
-store release operations. It exposes a small set of token-efficient meta-tools
-instead of a large list of single-purpose tools.
+`claude-in-mobile` is an MCP server plus a native CLI for automating Android,
+iOS Simulator, macOS desktop apps, Aurora OS devices, Chrome/Chromium sessions,
+quality checks, and app-store release operations. It exposes token-efficient
+meta-tools instead of many single-purpose tools.
 
 ## MCP Configuration
 
-The plugin launches the upstream MCP server as:
+For Codex:
+
+```bash
+codex mcp add mobile -- npx -y claude-in-mobile
+```
+
+For Claude Code:
+
+```bash
+claude mcp add --scope user --transport stdio mobile -- npx claude-in-mobile@latest
+```
+
+Equivalent JSON config:
 
 ```json
 {
@@ -24,28 +36,35 @@ The plugin launches the upstream MCP server as:
     "mobile": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "claude-in-mobile@3.7.0"]
+      "args": ["-y", "claude-in-mobile@latest"]
     }
   }
 }
 ```
 
-Use `mobile` tools for Claude Code automation. Use the native CLI for scripts,
-CI smoke tests, or quick manual checks.
+Use MCP tools for interactive agent automation. Use the native CLI for scripts,
+CI smoke tests, local setup, or quick manual checks. Check the current package
+with `npm view claude-in-mobile version` before pinning a version.
 
 ## Requirements
 
 - Android: `adb` in `PATH`, plus a connected USB-debuggable device or emulator.
-- iOS: macOS, Xcode, a booted iOS Simulator, and WebDriverAgent for full UI
-  tree inspection.
+- iOS: macOS, Xcode, a booted iOS Simulator, and WebDriverAgent/Appium
+  xcuitest for full UI tree inspection.
 - Desktop: macOS and Accessibility permission for the automation host.
-- Aurora OS: `audb` in `PATH`, SSH enabled on the device, and Python installed
-  on the device for tap and swipe support.
+- Aurora OS: `audb`/`audb-client`, SSH enabled on the device, and Python
+  installed on the device for tap and swipe support.
 - Browser: Chrome or Chromium reachable through CDP when using browser tools.
+- Store publishing: platform credentials and explicit package/artifact/track
+  confirmation before upload, rollout, promote, halt, or submit operations.
+
+Run `claude-in-mobile doctor` first when setup is uncertain. It checks common
+dependencies such as ADB, Android SDK paths, Xcode/simctl, Appium/WDA, JDK,
+audb-client, and Chrome.
 
 ## Core Tool Families
 
-- `device`: list devices, set target, and enable optional modules.
+- `device`: list devices, set/get active target, and enable/disable modules.
 - `input`: tap, long press, swipe, text, and key events.
 - `screen`: capture and annotate screenshots.
 - `ui`: inspect trees, find elements, tap text, wait, and assert UI state.
@@ -54,6 +73,15 @@ CI smoke tests, or quick manual checks.
 - `flow_batch`: execute multiple sequential operations in one round trip.
 - `flow_run`: run conditional or repeated automation flows.
 - `flow_parallel`: fan out the same action across multiple devices.
+
+Quality tools:
+
+- `accessibility`: audit for labels, touch targets, focus order, and duplicates.
+- `visual`: save baselines and compare screenshots for visual regressions.
+- `recorder`: record and replay taps, swipes, and text input.
+- `sync`: coordinate multi-device test barriers.
+- `autopilot`: explore apps with BFS/DFS and self-healing locators.
+- `performance`: collect CPU, memory, FPS, and snapshot metrics.
 
 Optional modules:
 
@@ -64,48 +92,46 @@ Optional modules:
 
 ## Common Workflows
 
-Device discovery:
+Device discovery: list connected devices, set the active target, then capture a
+screenshot before taking action.
 
-```text
-List connected devices, then set the active target before running actions.
-```
+Visual inspection: capture an annotated screenshot, inspect the UI tree, then
+tap by text, accessibility label, resource id, or screenshot index. Prefer
+semantic locators over raw coordinates.
 
-Visual inspection:
+Cross-platform app smoke test: launch the app on Android and iOS, wait for the
+first screen, assert expected text, capture screenshots, and collect logs on
+failure.
 
-```text
-Capture an annotated screenshot, inspect the UI tree, then tap by text or by a
-numbered/coordinate target from the screenshot.
-```
+QA pass: run accessibility audit, capture a visual baseline or compare against
+one, record a short repro if useful, and take performance snapshots around the
+interaction under test.
 
-Cross-platform app smoke test:
+Desktop app test: enable the desktop module, launch or attach to the macOS app,
+focus the window, resize to a stable viewport, inspect windows, then drive
+clicks and keyboard input.
 
-```text
-Launch the app on Android and iOS, wait for the first screen, assert that the
-expected text is visible, capture screenshots, then collect logs on failure.
-```
+Browser test: enable or call the browser module, open/navigate to the URL,
+snapshot DOM refs, click/fill by ref or selector, wait for selectors, and
+capture visual evidence.
 
-Desktop app test:
+Store release: confirm package name, artifact path, store, track, and rollout
+intent before uploading or submitting. Treat store actions as destructive.
 
-```text
-Enable the desktop module, launch or attach to the macOS app, focus the window,
-resize to a stable viewport, inspect windows, then drive clicks and keyboard
-input.
-```
-
-Store release:
-
-```text
-Enable the store module, confirm package name and artifact path, upload the
-build, set release notes, and submit or stage rollout only after explicit user
-confirmation.
-```
+See [references/tooling.md](references/tooling.md) for setup commands, platform
+details, and coordinate handling.
 
 ## Native CLI Examples
 
+These examples assume the native CLI binary is installed via Homebrew or a
+release artifact. The npm package is primarily used for MCP stdio startup.
+
 ```bash
+claude-in-mobile doctor
 claude-in-mobile screenshot android
 claude-in-mobile tap android 540 960 --from-size 540x960
 claude-in-mobile input android "hello world"
+claude-in-mobile ui-dump android | grep "Login"
 claude-in-mobile store upload --package com.example.app --file app.aab
 ```
 
@@ -114,6 +140,9 @@ claude-in-mobile store upload --package com.example.app --file app.aab
 - Verify the active target before any destructive action.
 - Prefer UI text or accessibility identifiers over raw coordinates when
   possible.
+- Raw tap/swipe coordinates are interpreted in the most recent screenshot's
+  pixel space and may be auto-scaled. UI-tree coordinates are device
+  coordinates. Do not mix them blindly.
 - Collect screenshots and logs before changing app/device state during bug
   investigation.
 - Treat `system shell`, file operations, permission changes, and store actions

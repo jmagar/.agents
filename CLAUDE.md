@@ -89,31 +89,31 @@ scripts/fork-list.sh
 
 Use shared source directories for canonical component intent and per-platform directories for emitted package formats.
 
-`shared/` contains the reusable content itself: skill directories, prompts, hook scripts, MCP fragments, command bodies, themes, and other files humans edit as the capability source.
+`src/` contains the reusable content itself: skill directories, prompts, hook scripts, MCP fragments, command bodies, themes, and other files humans edit as the capability source.
 
 `catalog/` contains package metadata about that content: plugin membership, target platforms, marketplace bucket, provenance, generation rules, publishability, source-to-output mappings, and fork tracking (upstream URL, pinned SHA, reason for divergence). Do not duplicate the full capability body in catalog files.
 
 Rule of thumb:
 
-- Edit the capability itself in `shared/`.
+- Edit the capability itself in `src/`.
 - Edit plugin inventory, ownership, targets, provenance, package membership, or generator behavior in `catalog/plugins/<plugin-id>.yaml`.
 
 | Component | Shared/source location | Per-plugin/platform location |
 |---|---|---|
-| Agents | `shared/agents/`, `shared/prompts/` | `plugins/<name>/agents/{claude,codex}/` |
-| Commands | `shared/commands/` | `plugins/<name>/commands/claude/` |
-| Hooks | `shared/hooks/`, `shared/hook-scripts/` | `plugins/<name>/hooks/{claude,codex}/` |
+| Agents | `src/agents/`, `src/prompts/` | `plugins/<name>/agents/{claude,codex}/` |
+| Commands | `src/commands/` | `plugins/<name>/commands/claude/` |
+| Hooks | `src/hooks/`, `src/hook-scripts/` | `plugins/<name>/hooks/{claude,codex}/` |
 | Skills | `src/skills/` | `plugins/<name>/skills/` |
-| Output styles | `shared/output-styles/` | `plugins/<name>/output-styles/` |
-| Channels | `shared/channels/` | `plugins/<name>/channels/` |
-| Monitors | `shared/monitors/` | `plugins/<name>/monitors/` |
-| Themes | `shared/themes/` | `plugins/<name>/themes/` |
-| MCP servers | `shared/mcp/` | `plugins/<name>/mcp/` |
-| LSP servers | `shared/lsp/` | `plugins/<name>/lsp/` |
-| `bin/` tools | `shared/bin/` for reusable tools | `plugins/<name>/bin/` |
-| Plugin settings | `shared/settings/` | `plugins/<name>/settings/` or plugin root `settings.json` |
+| Output styles | `src/output-styles/` | `plugins/<name>/output-styles/` |
+| Channels | `src/channels/` | `plugins/<name>/channels/` |
+| Monitors | `src/monitors/` | `plugins/<name>/monitors/` |
+| Themes | `src/themes/` | `plugins/<name>/themes/` |
+| MCP servers | `src/mcp/` | `plugins/<name>/mcp/` |
+| LSP servers | `src/lsp/` | `plugins/<name>/lsp/` |
+| `bin/` tools | `src/bin/` for reusable tools | `plugins/<name>/bin/` |
+| Plugin settings | `src/settings/` | `plugins/<name>/settings/` or plugin root `settings.json` |
 
-Agents are intentionally platform-specific at packaging time. Claude agents are Markdown/frontmatter, and Codex agents are standalone TOML and may need separate installation. Keep the common prompt/intent in `shared/agents/`, then use `catalog/plugins/<plugin-id>.yaml` to decide which plugin includes it and which platform outputs are generated.
+Agents are intentionally platform-specific at packaging time. Claude agents are Markdown/frontmatter, and Codex agents are standalone TOML and may need separate installation. Keep the common prompt/intent in `src/agents/`, then use `catalog/plugins/<plugin-id>.yaml` to decide which plugin includes it and which platform outputs are generated.
 
 Codex plugin support is not identical to Claude plugin support. In particular, do not assume Codex can distribute every component Claude can. Keep Codex-only installation steps explicit when a component must be written into user or project config outside the plugin payload.
 
