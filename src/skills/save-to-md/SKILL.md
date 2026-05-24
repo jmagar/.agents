@@ -1,6 +1,6 @@
 ---
 name: save-to-md
-description: Save session documentation to a markdown file with full context — date, branch, HEAD, session ID, and git state pre-injected. Use when the user says "save session", "save to md", "document this session", "write up what we did", "save session notes", or asks to capture the current conversation as a session log. Also invoked automatically by quick-push after a successful push.
+description: Save session documentation to a markdown file with full context — date, branch, HEAD, session ID, and git state pre-injected. Use when the user says "save session", "save to md", "document this session", "write up what we did", "save session notes", or asks to capture the current conversation as a session log. Also invoked automatically by quick-push before staging.
 allowed-tools: Write, Read, Bash
 argument-hint: [path]
 ---

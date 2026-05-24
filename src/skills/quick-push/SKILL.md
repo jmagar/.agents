@@ -1,6 +1,6 @@
 ---
 name: quick-push
-description: Save session context, git add all, commit with Claude co-authorship trailer, and push to current/new feature branch — including version bump and changelog update. Use when the user says "quick push", "push my changes", "commit and push", "ship this", "push to a new branch", or any request to wrap up local work and get it on the remote. Accepts optional `--no-bump` argument to skip the version bump.
+description: Create the save-to-md session doc before staging, git add all, commit with Claude co-authorship trailer, and push to current/new feature branch — including version bump and changelog update. Use when the user says "quick push", "push my changes", "commit and push", "ship this", "push to a new branch", or any request to wrap up local work and get it on the remote. Accepts optional `--no-bump` argument to skip the version bump.
 allowed-tools: Bash, Read, Edit, Write, TodoWrite
 argument-hint: [--no-bump]
 disable-model-invocation: true
@@ -33,7 +33,7 @@ Detect the project type and bump the version based on the nature of the changes 
 
 **Process:**
 1. Read the current version from the primary manifest (first match: `Cargo.toml`, `package.json`, `pyproject.toml`)
-2. Determine bump type from the changes in context (the commit prefix you'll write in step 4 should match)
+2. Determine bump type from the changes in context (the commit prefix you'll write in step 5 should match)
 3. Calculate the new version
 4. **Update the version in ALL version-bearing files that exist in the repo:**
    - `Cargo.toml` — `version = "X.Y.Z"` in `[package]` (or `[workspace.package]` for Rust workspaces)
@@ -54,7 +54,7 @@ Detect the project type and bump the version based on the nature of the changes 
 
 ### 3. Update CHANGELOG.md (before staging)
 If a `CHANGELOG.md` exists in the repo root:
-- This step documents *prior* commits — the current push's own entry is added in a follow-up amend after step 4's commit lands, since the SHA isn't known yet.
+- This step documents *prior* commits. Do not add the current push's own entry here because its commit SHA is not known yet.
 - If the version was bumped, ensure the changelog has a release section for the new version, e.g. `## [A.B.C] - YYYY-MM-DD`, and move any current `## [Unreleased]` content under it when the repo uses Keep a Changelog style.
 - Find the most recently documented commit in the changelog (look for commit hashes in the table)
 - Run `git log --oneline <last_documented_sha>..HEAD` to get undocumented commits
@@ -68,14 +68,22 @@ If a `CHANGELOG.md` exists in the repo root:
 ### 4. Save session context before staging
 Invoke the `save-to-md` skill before staging anything so the session document can be included in the commit.
 
+Because quick-push stages the whole worktree immediately afterward, constrain this invocation to session documentation:
+- Write the session document
+- Perform read-only maintenance checks needed to document the session
+- Create or update beads only when directly required to track remaining work from this session
+- Do not move plan files, delete branches/worktrees, or update unrelated stale docs during quick-push; record those as follow-up work instead
+
 After `save-to-md` finishes:
-- Record the final absolute path it prints
-- If the file is ignored by repo rules (common for `docs/sessions/`), stage it explicitly with `git add -f <session-doc-path>` during the staging step below
+- Record the final absolute path it prints; if no path is printed, stop before staging or committing
+- Check whether the file is ignored with `git -C "$(git rev-parse --show-toplevel)" check-ignore -q -- <session-doc-path>`
+- If the file is ignored by repo rules (common for `docs/sessions/`), stage it explicitly with `git add -f -- <session-doc-path>` during the staging step below
 - If the save fails, report the error and stop before staging or committing
 
 ### 5. Stage, commit, and push
-- Stage all changes with `git add .`
-- Also run `git add -f <session-doc-path>` if the generated session document was ignored and should be included in this quick-push commit
+- Get the repo root with `repo_root=$(git rev-parse --show-toplevel)`
+- Stage all changes from the repo root with `git -C "$repo_root" add .`
+- If the generated session document was ignored, also run `git -C "$repo_root" add -f -- <session-doc-path>`
 - Create a meaningful commit message following the repo's conventions
 - Always include Claude's co-authorship trailer:
   ```text
@@ -92,6 +100,7 @@ After `save-to-md` finishes:
 - If creating a new branch, name it based on the changes (e.g., `feat/add-user-auth`, `fix/navbar-styling`)
 - The changelog update is part of the commit — it goes in the same commit as the other changes
 - The session document is part of the commit — save it before staging, then explicitly force-add it if repo ignore rules would hide it
+- The saved session document captures pre-commit HEAD metadata; do not amend the session document after the push unless the user explicitly asks for final-HEAD metadata
 - End with a summary of what was pushed and the branch name
 - List all unfinished tasks in the session and next steps for the user to consider
 - If any step fails (e.g., version bump, changelog update, push), report the error and stop the process to avoid partial commits
