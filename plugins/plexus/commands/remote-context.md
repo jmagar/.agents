@@ -8,9 +8,11 @@ argument-hint: <host> [--json] [--no-probe]
 Load host-specific operating context before touching a remote device.
 
 ```bash
-python3 plugins/plexus/scripts/remote-context.py $ARGUMENTS
+python3 "${CLAUDE_PLUGIN_ROOT:-plugins/plexus}/scripts/remote-context.py" $ARGUMENTS
 ```
 
 Use the output as the working host context for this turn. Durable notes come
-from `plugins/plexus/remotes/<host>/REMOTE.md`; live state comes from SSH,
-Tailscale, Docker/systemd probes, and `syslog-mcp` when available.
+from the persistent plugin data profile at
+`${CLAUDE_PLUGIN_DATA}/remotes/<host>/REMOTE.md` when installed, or
+`~/.plexus/remotes/<host>/REMOTE.md` during local development. Live state comes
+from SSH, Tailscale, Docker/systemd probes, and `syslog-mcp` when available.

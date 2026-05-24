@@ -98,6 +98,10 @@ Recognized Codex manifest fields from the scaffold/docs:
 
 - Axon was asked separately for Claude Code plugin creation guidance and Codex
   plugin creation guidance.
+- Axon was also asked where mutable plugin data belongs. The answer confirmed
+  that plugin payload paths such as `${CLAUDE_PLUGIN_ROOT}` should be treated as
+  read-only package assets, while `${CLAUDE_PLUGIN_DATA}` is the persistent
+  location for user-authored data that survives plugin upgrades.
 - Official Claude Code plugin reference confirmed components, manifest fields,
   path behavior, and plugin CLI commands.
 - Official OpenAI Codex plugin docs confirmed the `.codex-plugin/plugin.json`

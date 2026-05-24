@@ -14,7 +14,7 @@ matching `remotes/<host>/REMOTE.md` profile.
 If invoked with a host argument, use the injected context below as the current
 operating context before making changes:
 
-!`python3 plugins/plexus/scripts/remote-context.py $ARGUMENTS`
+!`python3 "${CLAUDE_PLUGIN_ROOT:-plugins/plexus}/scripts/remote-context.py" $ARGUMENTS`
 
 ## Required First Step
 
@@ -22,7 +22,7 @@ If the dynamic context block is empty, failed, or the skill was auto-triggered
 without `$ARGUMENTS`, identify the host from the user's request and run:
 
 ```bash
-python3 plugins/plexus/scripts/remote-context.py <host>
+python3 "${CLAUDE_PLUGIN_ROOT:-plugins/plexus}/scripts/remote-context.py" <host>
 ```
 
 Use `--no-probe` only when the user asks for an offline plan or when SSH/live
