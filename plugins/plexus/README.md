@@ -9,6 +9,8 @@ touches the machine.
 
 - `skills/operating-remote/SKILL.md` - generic trigger and workflow for hosts
   that have a persistent `remotes/<host>/REMOTE.md` profile.
+- `skills/bootstrap-plexus/SKILL.md` - initializes persistent plugin data from
+  bundled templates without overwriting user-authored profiles.
 - `commands/remote-context.md` - slash-command style workflow for loading one
   host's context.
 - `scripts/remote-context.py` - helper that reads host memory and gathers live
