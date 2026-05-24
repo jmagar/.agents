@@ -1,6 +1,6 @@
 ---
 name: quick-push
-description: Git add all, commit with Claude co-authorship trailer, and push to current/new feature branch — including version bump, changelog update, and post-push session save. Use when the user says "quick push", "push my changes", "commit and push", "ship this", "push to a new branch", or any request to wrap up local work and get it on the remote. Accepts optional `--no-bump` argument to skip the version bump.
+description: Save session context, git add all, commit with Claude co-authorship trailer, and push to current/new feature branch — including version bump and changelog update. Use when the user says "quick push", "push my changes", "commit and push", "ship this", "push to a new branch", or any request to wrap up local work and get it on the remote. Accepts optional `--no-bump` argument to skip the version bump.
 allowed-tools: Bash, Read, Edit, Write, TodoWrite
 argument-hint: [--no-bump]
 disable-model-invocation: true
@@ -65,8 +65,17 @@ If a `CHANGELOG.md` exists in the repo root:
 - If the changelog format is unrecognizable (no commit hash table, no clear anchor), skip rather than guess
 - If no CHANGELOG.md exists, skip this step
 
-### 4. Stage, commit, and push
+### 4. Save session context before staging
+Invoke the `save-to-md` skill before staging anything so the session document can be included in the commit.
+
+After `save-to-md` finishes:
+- Record the final absolute path it prints
+- If the file is ignored by repo rules (common for `docs/sessions/`), stage it explicitly with `git add -f <session-doc-path>` during the staging step below
+- If the save fails, report the error and stop before staging or committing
+
+### 5. Stage, commit, and push
 - Stage all changes with `git add .`
+- Also run `git add -f <session-doc-path>` if the generated session document was ignored and should be included in this quick-push commit
 - Create a meaningful commit message following the repo's conventions
 - Always include Claude's co-authorship trailer:
   ```text
@@ -77,14 +86,12 @@ If a `CHANGELOG.md` exists in the repo root:
   - Existing branch: `git push`
   - If push is rejected (remote has new commits): run `git pull --rebase`, resolve any conflicts, then retry the push
 
-### 5. Post-push: save session context
-After the push succeeds, invoke the `save-to-md` skill to capture session context.
-
 ---
 
 **Notes:**
 - If creating a new branch, name it based on the changes (e.g., `feat/add-user-auth`, `fix/navbar-styling`)
 - The changelog update is part of the commit — it goes in the same commit as the other changes
+- The session document is part of the commit — save it before staging, then explicitly force-add it if repo ignore rules would hide it
 - End with a summary of what was pushed and the branch name
 - List all unfinished tasks in the session and next steps for the user to consider
 - If any step fails (e.g., version bump, changelog update, push), report the error and stop the process to avoid partial commits
