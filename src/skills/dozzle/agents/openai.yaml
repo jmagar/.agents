@@ -1,4 +1,4 @@
 interface:
   display_name: "Dozzle"
-  short_description: "Direct Dozzle API workflow for container logs"
-  default_prompt: "Use $dozzle to inspect Dozzle health, version, containers, logs, or session-cookie auth through the direct HTTP API."
+  short_description: "Direct Dozzle API, auth, and MCP workflow"
+  default_prompt: "Use $dozzle to inspect Dozzle health, logs, auth setup, or MCP through the direct HTTP API."

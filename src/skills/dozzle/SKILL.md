@@ -1,6 +1,6 @@
 ---
 name: dozzle
-description: Direct Dozzle API workflow for the real-time Docker container log viewer. Use when the user wants to inspect Dozzle health, version, containers, logs, authentication failures, or session-cookie refresh. Uses `DOZZLE_URL` and optional `DOZZLE_SESSION_COOKIE`; do not route through Lab MCP or `lab dozzle`.
+description: Direct Dozzle API workflow for the real-time Docker container log viewer. Use when the user wants to inspect Dozzle health, version, containers, logs, authentication failures, session-cookie refresh, auth setup, or Dozzle MCP. Uses `DOZZLE_URL` and optional `DOZZLE_SESSION_COOKIE`; do not route through Lab MCP or `lab dozzle`.
 ---
 
 # Dozzle
@@ -23,6 +23,21 @@ DOZZLE_SESSION_COOKIE      # optional raw Cookie header value
 
 If the shell environment is not already populated, `~/.lab/.env` may contain
 these values. Source it only inside a subshell and suppress source output.
+
+### Security Model
+
+Dozzle's local web API routes are implementation details, not a stable public
+REST contract. Use them as best-effort operational probes and keep calls
+read-only unless the user explicitly asks for a mutating action.
+
+Check the root `config__json` for `authProvider`, enabled shell/actions, and
+host inventory. If `authProvider` is `none`, access control is provided only by
+the surrounding network/proxy boundary. Treat direct Tailnet or LAN URLs as
+bypasses around Authelia/forward-proxy auth unless ACLs restrict them.
+
+Dozzle can reach Docker hosts, and Docker socket access is highly privileged.
+If shell/actions/download are enabled, prefer an authenticated/proxied path and
+do not invoke shell or action endpoints without explicit user intent.
 
 ### Auth
 
@@ -59,6 +74,9 @@ Use `/usr/bin/curl` if shell startup or sourced env files alter `PATH`.
 
 For endpoint details, safe cookie helpers, and container/log workflows, read
 [`references/api.md`](references/api.md).
+
+For configuring Dozzle auth providers or MCP, read
+[`references/auth-mcp.md`](references/auth-mcp.md).
 
 ## When NOT to use this skill
 

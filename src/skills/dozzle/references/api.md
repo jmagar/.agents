@@ -41,6 +41,13 @@ probe.
 dozzle_curl "$DOZZLE_URL/api/version"
 ```
 
+## API Stability
+
+Dozzle's local `/api/*` routes are used by the web UI and are not documented as
+a stable public REST API. Treat them as best-effort operational probes. Handle
+unexpected status codes, changed response shapes, and empty log responses
+gracefully.
+
 ## Session Refresh
 
 When the API returns `401` or `403`:
@@ -93,6 +100,10 @@ URL-encode path values if they come from names or labels rather than IDs.
 
 Treat mutating container action endpoints as unsafe unless the user explicitly
 asks for that action.
+
+Do not use shell, action, download, or token endpoints unless the user
+explicitly asks for that workflow. Default to read-only health, discovery, and
+log retrieval.
 
 ## Auth Handling
 
