@@ -4,7 +4,7 @@ use fs2::FileExt;
 use serde::Serialize;
 use serde_json::{Value, json};
 use std::fs::{OpenOptions, create_dir_all};
-use std::io::Write;
+use std::os::unix::io::AsRawFd;
 use std::path::{Path, PathBuf};
 use ulid::Ulid;
 
@@ -98,12 +98,30 @@ fn append_line(bus: &Path, line: &str) {
         let _ = create_dir_all(parent);
     }
     maybe_rotate(bus);
-    let mut f = OpenOptions::new()
+    let f = OpenOptions::new()
         .create(true)
         .append(true)
         .open(bus)
         .expect("open bus");
-    writeln!(f, "{}", line).expect("write event");
+    let mut buf = String::with_capacity(line.len() + 1);
+    buf.push_str(line);
+    buf.push('\n');
+    // Direct libc::write() — single syscall. O_APPEND + buf < PIPE_BUF (4096)
+    // is atomic per POSIX. Loop only on EINTR (signal interruption); any
+    // other short/error result is a real failure.
+    let bytes = buf.as_bytes();
+    let fd = f.as_raw_fd();
+    loop {
+        let n = unsafe { libc::write(fd, bytes.as_ptr() as *const _, bytes.len()) };
+        if n == bytes.len() as isize {
+            break;
+        }
+        let err = std::io::Error::last_os_error();
+        if err.raw_os_error() == Some(libc::EINTR) {
+            continue;
+        }
+        panic!("write failed: {} of {} bytes, errno {:?}", n, bytes.len(), err);
+    }
 }
 
 fn maybe_rotate(bus: &Path) {
@@ -158,7 +176,10 @@ fn maybe_rotate(bus: &Path) {
     }
     let dot1 = bus.with_file_name(format!("{}.1", base_name));
     let _ = std::fs::rename(bus, &dot1);
-    let _ = OpenOptions::new().create(true).write(true).truncate(true).open(bus);
+    // Touch the new bus into existence WITHOUT truncating — concurrent
+    // emitters may have already raced through O_CREAT|O_APPEND and written
+    // events here; we must preserve them.
+    let _ = OpenOptions::new().create(true).append(true).open(bus);
 
     let _ = FileExt::unlock(&lock_file);
 }

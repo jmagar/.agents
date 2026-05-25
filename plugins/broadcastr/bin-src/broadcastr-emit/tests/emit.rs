@@ -83,7 +83,14 @@ fn emit_rotates_when_bus_exceeds_max_bytes() {
     let bus_dir = repo.join(".broadcastr");
     fs::create_dir_all(&bus_dir).unwrap();
     let bus = bus_dir.join("events.jsonl");
-    fs::write(&bus, "x".repeat(2048)).unwrap();
+    // Pre-fill with padding lines (each terminated by \n so they line-split cleanly)
+    let padding = "x".repeat(63);
+    let mut buf = String::new();
+    for _ in 0..40 {
+        buf.push_str(&padding);
+        buf.push('\n');
+    }
+    fs::write(&bus, &buf).unwrap();
 
     Command::new(env!("CARGO_BIN_EXE_broadcastr-emit"))
         .env("CLAUDE_PROJECT_DIR", &repo)
@@ -111,7 +118,15 @@ fn concurrent_rotation_does_not_clobber() {
     let repo = tmp.path().join("repo");
     let bus_dir = repo.join(".broadcastr");
     fs::create_dir_all(&bus_dir).unwrap();
-    fs::write(bus_dir.join("events.jsonl"), "x".repeat(2048)).unwrap();
+    // Pre-fill with padding lines terminated by \n so the test's line-based
+    // parser can cleanly distinguish padding from real events.
+    let padding = "x".repeat(63);
+    let mut buf = String::new();
+    for _ in 0..40 {
+        buf.push_str(&padding);
+        buf.push('\n');
+    }
+    fs::write(bus_dir.join("events.jsonl"), &buf).unwrap();
 
     let mut handles = vec![];
     for _ in 0..8 {
