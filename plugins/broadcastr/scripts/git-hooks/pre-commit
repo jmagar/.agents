@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 set -uo pipefail
-PLUGIN_ROOT="${BROADCASTR_PLUGIN_ROOT:-$HOME/.claude/plugins/broadcastr}"
-HOOK_DIR="${BROADCASTR_HOOK_DIR:-$(dirname "$0")}"
-PREV="$HOOK_DIR/pre-commit.broadcastr-prev"
-BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')"
+. "$(dirname "$0")/_lib.sh"
+bcr_hook_init pre-commit
 
 "$PLUGIN_ROOT/scripts/emit.sh" \
   --category pre-commit --tier info --source git-hook \

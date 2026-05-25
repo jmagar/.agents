@@ -137,8 +137,6 @@ fn maybe_rotate(bus: &Path) -> std::io::Result<()> {
         .ok()
         .and_then(|s| s.parse().ok())
         .unwrap_or(5 * 1024 * 1024);
-    // Retain has a minimum of 1: we always rename bus → bus.1 unconditionally
-    // when rotating, so any lower value is meaningless.
     let retain: u32 = std::env::var("BROADCASTR_BUS_RETAIN")
         .ok()
         .and_then(|s| s.parse().ok())
@@ -163,14 +161,11 @@ fn maybe_rotate(bus: &Path) -> std::io::Result<()> {
         .write(true)
         .truncate(false)
         .open(&lock_path)?;
-    // Non-blocking exclusive lock: losers skip rotation this turn; the next
-    // emit will retry. File::try_lock returns Result<(), TryLockError>:
-    // Ok(()) on acquired, Err(TryLockError::WouldBlock) on contention,
-    // Err(TryLockError::Error(_)) on real failures.
+    // Non-blocking exclusive lock: losers skip rotation this turn and the
+    // next emit retries. Lock is released when `lock_file` drops.
     if File::try_lock(&lock_file).is_err() {
         return Ok(());
     }
-    // Lock is released when `lock_file` drops at end of scope.
 
     // Re-check size under lock (TOCTOU)
     let size = match std::fs::metadata(bus) {

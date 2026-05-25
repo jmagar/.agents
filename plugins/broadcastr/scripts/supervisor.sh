@@ -31,18 +31,23 @@ done
 # Test-arm each target INDIVIDUALLY so partial failures (e.g. one path's watch
 # limit exhausted, another path on a different filesystem) are caught instead
 # of being masked by inotifywait's any-success-is-success semantics for multi-
-# path invocations.
+# path invocations. Each probe is 1s; run them in parallel so startup latency
+# stays ~1s regardless of how many targets the watcher has.
 ARMED=()
 FAILED=()
+PIDS=()
 for d in "${TARGETS[@]}"; do
-  inotifywait -q -t 1 -e create "$d" >/dev/null 2>&1
+  inotifywait -q -t 1 -e create "$d" >/dev/null 2>&1 &
+  PIDS+=($!)
+done
+for i in "${!PIDS[@]}"; do
+  wait "${PIDS[$i]}"
   rc=$?
   # 0 = event during the 1s window, 2 = timeout (arm worked but no event).
-  # Anything else = arm failure for THIS target.
   if [ "$rc" -eq 0 ] || [ "$rc" -eq 2 ]; then
-    ARMED+=("$d")
+    ARMED+=("${TARGETS[$i]}")
   else
-    FAILED+=("$d")
+    FAILED+=("${TARGETS[$i]}")
   fi
 done
 

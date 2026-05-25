@@ -42,8 +42,10 @@ format_line() {
 
 # Dedup by event id: every emit writes to BOTH per-repo and global buses
 # when BROADCASTR_GLOBAL_FEED=1, so `tail -F file1 file2` sees the same
-# event twice. Strip duplicates by ULID before formatting. The first
-# occurrence wins; subsequent identical ids are dropped.
+# event twice. Strip duplicates by ULID before formatting. The seen-set
+# is bulk-purged every 10k entries to keep memory bounded for long
+# sessions; the dup window in practice is sub-second so a periodic flush
+# loses nothing real.
 dedup_events() {
   awk '
     {
@@ -51,12 +53,11 @@ dedup_events() {
         id = substr($0, RSTART, RLENGTH)
         if (!(id in seen)) {
           seen[id] = 1
-          print
-          fflush()
+          print; fflush()
         }
+        if (length(seen) > 10000) delete seen
       } else {
-        print
-        fflush()
+        print; fflush()
       }
     }
   '

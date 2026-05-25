@@ -40,7 +40,6 @@ TS="$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
 # bytes that tr's per-class retention (~12.5%) yields >=26 chars even in the
 # worst case (256 bytes * 0.125 = 32 expected chars). Trim to 26.
 RAND="$(head -c 256 /dev/urandom | LC_ALL=C tr -dc '0-9A-HJKMNP-TV-Z' | head -c 26)"
-# Defensive: extremely improbable that we still don't have 26 chars.
 if [ "${#RAND}" -lt 26 ]; then
   RAND="$(printf '%s%s' "$RAND" "$(head -c 256 /dev/urandom | LC_ALL=C tr -dc '0-9A-HJKMNP-TV-Z' | head -c 26)" | head -c 26)"
 fi

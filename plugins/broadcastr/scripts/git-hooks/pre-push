@@ -3,12 +3,11 @@
 # outcome (success/fail) is observed by the optional push-wrapper.sh
 # alias installed by broadcastr-install-hooks.
 set -uo pipefail
-PLUGIN_ROOT="${BROADCASTR_PLUGIN_ROOT:-$HOME/.claude/plugins/broadcastr}"
-HOOK_DIR="${BROADCASTR_HOOK_DIR:-$(dirname "$0")}"
-PREV="$HOOK_DIR/pre-push.broadcastr-prev"
+. "$(dirname "$0")/_lib.sh"
+bcr_hook_init pre-push
+
 REMOTE="${1:-?}"
 URL="${2:-?}"
-BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')"
 
 DATA="{\"subtype\":\"attempt\"}"
 if command -v jq >/dev/null 2>&1; then
@@ -22,7 +21,5 @@ fi
   --summary "push-attempt: $BRANCH -> $REMOTE" \
   --data "$DATA"
 
-if [ -x "$PREV" ]; then
-  exec "$PREV" "$@"
-fi
+bcr_chain_prev "$@"
 exit 0

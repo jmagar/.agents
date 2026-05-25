@@ -5,10 +5,19 @@ set -euo pipefail
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 
 INPUT="$(cat || true)"
-CMD=""
-if command -v jq >/dev/null 2>&1; then
-  CMD="$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null || true)"
-fi
+
+# Cheap pre-filter against the raw JSON: 95%+ of Bash tool calls don't match
+# any classifier pattern, and jq cold-start is ~5-15ms per call. Substring
+# match against the unparsed input first; only invoke jq if a candidate
+# token appears anywhere in the payload. False positives are fine because
+# the precise case-match runs after jq extracts the actual command.
+case "$INPUT" in
+  *"bd "*|*"git stash"*) ;;
+  *) exit 0 ;;
+esac
+
+command -v jq >/dev/null 2>&1 || exit 0
+CMD="$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null || true)"
 [ -z "$CMD" ] && exit 0
 
 emit_event() {
