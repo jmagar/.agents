@@ -53,7 +53,9 @@ Two parallel bus files. Producers write both (configurable via `BROADCASTR_GLOBA
 
 **Atomicity:** writes are line-oriented JSONL appended with `O_APPEND`, which POSIX guarantees is atomic for writes under `PIPE_BUF` (4096 bytes on Linux). All our events are well under that limit.
 
-**Rotation:** the agent feed monitor skips events older than its own startup time, so an unbounded bus doesn't replay history on session resume. A weekly cron (out of v1 scope) truncates the bus to the last N days.
+**Rotation:** lazy size-based, performed inside `emit.sh` before each write. When the bus exceeds `BROADCASTR_BUS_MAX_BYTES` (default 5 MB), `emit.sh` atomically rotates `events.jsonl → events.jsonl.1`, shifts older rotations (`.1→.2`, `.2→.3`, drops anything beyond `BROADCASTR_BUS_RETAIN`, default 3), and creates a fresh empty `events.jsonl`. Per-repo and global buses rotate independently. Consumers using `tail -F` follow files by name and reopen after rotation automatically. Cost per emit: one `stat` call (rotation itself happens roughly every several thousand events at default thresholds).
+
+**History on resume:** the agent feed monitor skips events older than its own startup time, so neither rotation nor session resume replays history.
 
 ## Event schema
 
@@ -304,6 +306,8 @@ Declared in `.claude-plugin/plugin.json` (`userConfig`):
 | `apprise_tag` | string | `"broadcastr"` | Apprise routing tag |
 | `global_feed` | boolean | `true` | Tail the global bus in addition to the per-repo bus |
 | `mute_categories` | string (multiple) | `[]` | Categories to drop from the agent feed (e.g., `["plan-exec"]` if too noisy) |
+| `bus_max_bytes` | number | `5242880` | Rotate the bus when it exceeds this size (5 MB default) |
+| `bus_retain` | number | `3` | Number of rotated bus files to keep |
 
 Exposed at runtime as `${user_config.*}` substitution and as `CLAUDE_PLUGIN_OPTION_*` env vars to all scripts.
 
@@ -315,14 +319,13 @@ Exposed at runtime as `${user_config.*}` substitution and as `CLAUDE_PLUGIN_OPTI
 | inotifywait not installed | inotify monitors fail at startup | `broadcastr:install-hooks` skill checks and warns at install; events from FS sources go silent (no crash) |
 | `apprise` CLI missing | `alert-gateway.sh` logs and skips | Setting `apprise_enabled=false` disables the monitor entirely |
 | Stale `.git/hooks/<hook>.broadcastr-prev` from old install | Hook chain still runs prev; uninstall restores it | `broadcastr:install-hooks` is idempotent and detects existing shims |
-| Bus grows unbounded | Disk creep; no functional impact (consumers skip old) | v1 ships with no rotation; document manual `truncate -s 0` ; v2 adds a weekly cron |
+| Bus grows unbounded | Disk creep | Lazy size-based rotation in `emit.sh` (5 MB × 3 rotations = ~20 MB cap per bus); see [Bus layout → Rotation](#bus-layout) |
 | Two emitters race on `O_APPEND` | Both lines written atomically, in arbitrary order | Acceptable; ordering within sub-millisecond is undefined by design |
 | Self-suppression misfires (session id absent) | Agent sees own event | Acceptable for v1; tier `info`, low cost |
 
 ## Out-of-scope for v1
 
 - v2 polling emitters: PR status (`gh pr list`), CI/CD (`gh run list`), container events (`docker events`), cargo build watching.
-- Bus rotation cron.
 - Web UI / Aurora dashboard for the global feed.
 - TUI consumer (`broadcastr watch`).
 - Multi-host bus sync (right now the global bus is per-host; cross-host would need a shared mount or a small relay).
