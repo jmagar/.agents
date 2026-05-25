@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+
+cmd="${1:-help}"; shift || true
+
+case "$cmd" in
+  emit)
+    cat=$1; tier=$2; summary=$3; shift 3
+    exec "$PLUGIN_ROOT/scripts/emit.sh" --category "$cat" --tier "$tier" --summary "$summary" "$@"
+    ;;
+  tail)
+    exec "$PLUGIN_ROOT/scripts/tail-bus.sh"
+    ;;
+  recent)
+    since="5m"
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --since=*) since="${1#--since=}"; shift ;;
+        *) shift ;;
+      esac
+    done
+    repo_bus="${CLAUDE_PROJECT_DIR:-$PWD}/.broadcastr/events.jsonl"
+    global_bus="${BROADCASTR_HOME:-$HOME/.claude/broadcastr}/events.jsonl"
+    cutoff=$(date -u -d "$since ago" +%Y-%m-%dT%H:%M:%S.%3NZ 2>/dev/null \
+             || date -u -v-"${since}" +%Y-%m-%dT%H:%M:%S.000Z 2>/dev/null \
+             || echo "1970-01-01T00:00:00.000Z")
+    for b in "$repo_bus" "$global_bus"; do
+      [ -f "$b" ] || continue
+      jq -c --arg cutoff "$cutoff" 'select(.ts > $cutoff)' "$b" 2>/dev/null || true
+    done
+    ;;
+  status)
+    repo_bus="${CLAUDE_PROJECT_DIR:-$PWD}/.broadcastr/events.jsonl"
+    global_bus="${BROADCASTR_HOME:-$HOME/.claude/broadcastr}/events.jsonl"
+    printf 'broadcastr status\n'
+    for b in "$repo_bus" "$global_bus"; do
+      if [ -f "$b" ]; then
+        size=$(stat -c %s "$b" 2>/dev/null || stat -f %z "$b" 2>/dev/null || echo 0)
+        printf '  %s  %s bytes  %s events\n' "$b" "$size" "$(wc -l < "$b")"
+      else
+        printf '  %s  (absent)\n' "$b"
+      fi
+    done
+    printf '  disabled=%s  global_feed=%s  mute=%s\n' \
+      "${BROADCASTR_DISABLED:-0}" "${BROADCASTR_GLOBAL_FEED:-1}" "${BROADCASTR_MUTE:-}"
+    ;;
+  mute)
+    list="$1"
+    cur="${BROADCASTR_MUTE:-}"
+    if [ -n "$cur" ]; then
+      printf 'export BROADCASTR_MUTE=%s,%s\n' "$cur" "$list"
+    else
+      printf 'export BROADCASTR_MUTE=%s\n' "$list"
+    fi
+    printf '# eval the line above to apply in this shell\n'
+    ;;
+  help|*)
+    cat <<EOF
+broadcastr - shared activity bus for concurrent Claude sessions
+
+Usage:
+  broadcastr emit <category> <tier> <summary> [--data <json>]
+  broadcastr tail
+  broadcastr recent [--since=5m]
+  broadcastr status
+  broadcastr mute <category>[,<category>...]
+EOF
+    ;;
+esac

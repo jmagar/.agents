@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PLUGIN_ROOT="${BROADCASTR_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}"
+if [ -z "$PLUGIN_ROOT" ]; then
+  echo "broadcastr-install-hooks: BROADCASTR_PLUGIN_ROOT or CLAUDE_PLUGIN_ROOT must be set" >&2
+  exit 1
+fi
+
+TARGET_REPO="${1:-$PWD}"
+HOOK_DIR="$TARGET_REPO/.git/hooks"
+
+if [ ! -d "$HOOK_DIR" ]; then
+  echo "broadcastr-install-hooks: $HOOK_DIR not found; run inside a git repo or pass the repo path" >&2
+  exit 1
+fi
+
+mkdir -p "$HOOK_DIR"
+
+is_broadcastr_shim() {
+  grep -q 'broadcastr-install-hooks SHIM' "$1" 2>/dev/null
+}
+
+for hook in post-commit pre-commit pre-push post-checkout post-merge; do
+  src="$PLUGIN_ROOT/scripts/git-hooks/$hook"
+  dst="$HOOK_DIR/$hook"
+  prev="$dst.broadcastr-prev"
+
+  shim_contents="$(printf '%s\n' \
+    '#!/usr/bin/env bash' \
+    '# broadcastr-install-hooks SHIM v1' \
+    "BROADCASTR_PLUGIN_ROOT='$PLUGIN_ROOT'" \
+    "export BROADCASTR_PLUGIN_ROOT" \
+    "exec '$src' \"\$@\"")"
+
+  if [ -e "$dst" ]; then
+    if is_broadcastr_shim "$dst"; then
+      # Already our shim — rewrite (idempotent), do not touch .broadcastr-prev
+      printf '%s\n' "$shim_contents" > "$dst"
+      chmod +x "$dst"
+      continue
+    fi
+    # Real pre-existing hook — preserve it once
+    if [ ! -e "$prev" ]; then
+      mv "$dst" "$prev"
+      chmod +x "$prev"
+    fi
+  fi
+
+  printf '%s\n' "$shim_contents" > "$dst"
+  chmod +x "$dst"
+done
+
+echo "broadcastr: installed shims into $HOOK_DIR"
