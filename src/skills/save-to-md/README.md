@@ -17,10 +17,17 @@ The generated session note must also document every repo maintenance action, no-
 
 Pairs with `hand-off` — this writes the log; `hand-off` reads it back into a fresh session.
 
+## HTML output
+
+Pass `--html` as the first argument (or a path ending in `.html`) to render an Aurora-styled HTML artifact instead of markdown. The artifact uses the Aurora design tokens (dark navy with cyan/violet accents, Manrope + Inter + JetBrains Mono), a sticky table-of-contents sidebar with Lucide icons, an at-a-glance stat row, Tier 2 panels with section icons, collapsible command transcript, semantic status badges, and a print stylesheet. It's a single self-contained file (Google Fonts CDN only) that opens directly in a browser.
+
+Markdown remains the default and is what `quick-push` relies on — the HTML mode is opt-in.
+
 ## Invoke
 
-Triggers: "save session", "save to md", "document this session", "write up what we did", "save session notes". Also invoked automatically by `quick-push` after a successful push.
+Triggers: "save session", "save to md", "document this session", "write up what we did", "save session notes". Add `--html` or a `.html` path for the rich artifact. Also invoked automatically by `quick-push` after a successful push (markdown only).
 
 ## Files
 
 - `SKILL.md` — agent instructions
+- `references/html-template.html` — Aurora-styled HTML template, used when output is `.html`
