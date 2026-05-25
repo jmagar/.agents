@@ -52,7 +52,7 @@ The global bus path is stable across Claude sessions and intentionally lives out
 
 **Atomicity:** writes are line-oriented JSONL appended with `O_APPEND`, which POSIX guarantees is atomic for writes under `PIPE_BUF` (4096 bytes on Linux). All our events are well under that limit.
 
-**Rotation:** lazy size-based, performed inside `emit.sh` before each write. When the bus exceeds `BROADCASTR_BUS_MAX_BYTES` (default 5 MB), `emit.sh` atomically rotates `events.jsonl → events.jsonl.1`, shifts older rotations (`.1→.2`, `.2→.3`, drops anything beyond `BROADCASTR_BUS_RETAIN`, default 3), and creates a fresh empty `events.jsonl`. Per-repo and global buses rotate independently. Consumers using `tail -F` follow files by name and reopen after rotation automatically. Cost per emit: one `stat` call (rotation itself happens roughly every several thousand events at default thresholds).
+**Rotation:** lazy size-based, performed inside `emit.sh` before each write, guarded by a non-blocking `flock` on `<bus>.rotate.lock`. When the bus exceeds `BROADCASTR_BUS_MAX_BYTES` (default 5 MB), the lock holder atomically rotates `events.jsonl → events.jsonl.1`, shifts older rotations (`.1→.2`, `.2→.3`, drops anything beyond `BROADCASTR_BUS_RETAIN`, default 3), and creates a fresh empty `events.jsonl` via `touch`. Concurrent emitters that lose the `flock` skip rotation and proceed to append — the next emit retries. Per-repo and global buses rotate independently with separate lock files. Consumers using `tail -F` follow files by name and reopen after rotation automatically. Cost per emit: one `stat` call + one non-blocking `flock` (microseconds when uncontended); rotation itself happens roughly every several thousand events at default thresholds.
 
 **History on resume:** the agent feed monitor skips events older than its own startup time, so neither rotation nor session resume replays history.
 
@@ -125,11 +125,21 @@ ${CLAUDE_PLUGIN_ROOT}/scripts/emit.sh <category> <tier> <summary> [--data <json>
 ```
 
 `emit.sh` is the *only* code path that writes to the bus. It:
-1. Generates ULID and timestamp.
+1. Generates ULID and timestamp via the pinned fast path (see below).
 2. Resolves emitter context: `CLAUDE_SESSION_ID`, `HOSTNAME`, `USER`.
-3. Atomically appends one JSONL line to the per-repo bus.
-4. If `BROADCASTR_GLOBAL_FEED=1` (default), atomically appends to the global bus too.
-5. No-ops silently if `BROADCASTR_DISABLED=1`.
+3. Acquires a non-blocking `flock` on `<bus>.rotate.lock` and runs the rotation check (see [Bus layout → Rotation](#bus-layout)). On `flock` contention, skips rotation this turn — the next emit will retry.
+4. Atomically appends one JSONL line to the per-repo bus (no lock; `O_APPEND` is the only synchronization).
+5. If `BROADCASTR_GLOBAL_FEED=1` (default), atomically appends to the global bus too.
+6. No-ops silently if `BROADCASTR_DISABLED=1`.
+
+### ULID + timestamp fast path
+
+`emit.sh` MUST NOT shell out to Python or any interpreter for ULID generation — that's a 50-80ms cold-start tax on every Bash tool call. The fast path is, in priority order:
+
+1. **Compiled `broadcastr-emit` binary** (Rust, shipped in `plugins/broadcastr/bin/`). Performs ULID generation, timestamp formatting, and both appends in one process. `emit.sh` is then a thin wrapper that just `exec`s this binary. Target latency: <5ms.
+2. **Pure-bash fallback** when the binary is unavailable: `printf '%(%Y-%m-%dT%H:%M:%S)T.%03dZ\n' -1 $((RANDOM % 1000))` for timestamp; `head -c 10 /dev/urandom | base32 | tr -d =` for the ULID random component. ~5-10ms. Used only on first install before the binary is built.
+
+`HOSTNAME`, `USER`, and `CLAUDE_SESSION_ID` are resolved once at hook-runtime startup and exported to the emit binary via env vars — not re-read per emit.
 
 ### 1. Claude Code hooks — `plugins/broadcastr/hooks/hooks.json`
 
@@ -145,11 +155,11 @@ The skill drops idempotent shim hooks into `.git/hooks/`. Each shim emits and th
 
 | Hook | Event(s) emitted |
 |---|---|
-| `post-commit` | `commit` with sha + files-changed count |
-| `pre-commit` | `pre-commit` start; runs original; emits pass/fail |
-| `pre-push` | `push` with target ref + remote; emits success/fail after the actual push |
-| `post-checkout` | `branch` with prev → new ref, distinguishing branch/worktree/file checkout via the third arg |
-| `post-merge` | `branch` (merge subtype) with merged ref |
+| `post-commit` | `commit` with sha + files-changed count + `data.subtype: "commit"`. Suppressed if `post-merge` fired in the last 2 seconds for the same sha (dedup — merge commits trigger both hooks). |
+| `pre-commit` | `pre-commit` start; runs original; emits pass/fail from observed exit code. If original is killed by signal, emits `fail` with a `signal: <N>` data field. |
+| `pre-push` | `push-attempt` with target ref + remote. **Does not emit push success/fail** — git's `pre-push` hook fires *before* the push and cannot observe its outcome. The `push-fail` alert is produced instead by a wrapper alias around `git push` (installed by the install-hooks skill into the user's shell) that runs the actual push and emits the result. Users who push outside the wrapper get only the attempt event. |
+| `post-checkout` | `branch` with prev → new ref. Disambiguates branch/worktree/file checkout via the third arg per the canonical git hook contract; explicitly does NOT attempt to interpret `git switch` / `git restore` / `git worktree add` (which invoke this hook with different arg patterns) — those emit a generic `checkout` with raw args in `data`. |
+| `post-merge` | `commit` with merged ref + `data.subtype: "merge"`. Sets a 2-second sentinel file (`<bus>.last-merge-sha`) that the `post-commit` shim checks to dedup the immediately-following commit. |
 
 ### 3. inotify monitors — `plugins/broadcastr/monitors/monitors.json`
 
@@ -161,6 +171,10 @@ Two long-running monitors, declared as plugin monitors so Claude Code starts the
 | `broadcastr-sessions` | `${CLAUDE_PROJECT_DIR}/docs/sessions` | `session-doc` |
 
 Cross-session presence is handled by the `SessionStart` / `Stop` hooks fired by each Claude session. No global cross-agent watcher is needed in v1.
+
+**Monitor supervision.** Each `watch-*.sh` script is wrapped in a `while true; do inotifywait …; sleep 1; done` supervisor loop, so a transient failure (e.g., the watched dir gets `rm -rf`'d and recreated) restarts the watch instead of killing the monitor. Claude Code's plugin runtime owns process lifecycle for the outer monitor; the inner supervisor handles inotify-specific transience.
+
+**inotify failure mode.** If `inotifywait` cannot arm a watch at startup — typically because `fs.inotify.max_user_watches` is exhausted or the target directory doesn't exist and can't be created — the supervisor emits a single `alert`-tier event (category `agent-presence`, summary `"broadcastr: <monitor-name> failed to arm, FS events disabled"`) and exits the loop. This makes structural silence visible instead of indistinguishable from "nothing happened."
 
 ### 4. Manual CLI
 
@@ -240,7 +254,8 @@ plugins/broadcastr/
 ├── commands/
 │   └── broadcastr.md                 ← /broadcastr slash: status, recent N events, toggle global
 ├── bin/
-│   └── broadcastr                    ← CLI shim (emit, tail, status, recent, mute)
+│   ├── broadcastr                    ← CLI shim (emit, tail, status, recent, mute)
+│   └── broadcastr-emit               ← compiled fast-path emitter (Rust); built on install
 ├── scripts/
 │   ├── emit.sh                       ← canonical event writer (atomic JSONL append, dual bus)
 │   ├── tail-bus.sh                   ← feed monitor entry
@@ -281,6 +296,10 @@ Exposed at runtime as `${user_config.*}` substitution and as `CLAUDE_PLUGIN_OPTI
 | Stale `.git/hooks/<hook>.broadcastr-prev` from old install | Hook chain still runs prev; uninstall restores it | `broadcastr:install-hooks` is idempotent and detects existing shims |
 | Bus grows unbounded | Disk creep | Lazy size-based rotation in `emit.sh` (5 MB × 3 rotations = ~20 MB cap per bus); see [Bus layout → Rotation](#bus-layout) |
 | Two emitters race on `O_APPEND` | Both lines written atomically, in arbitrary order | Acceptable; ordering within sub-millisecond is undefined by design |
+| Two emitters race on rotation | Without lock, second `mv` clobbers `.1` rotation file | Non-blocking `flock` on `<bus>.rotate.lock` around rotation block; losers skip rotation, retry next emit |
+| `pre-push` hook can't observe push outcome | Spec originally claimed it could; design bug | Pre-push emits `push-attempt` only; success/fail comes from optional shell wrapper around `git push` installed by `install-hooks` skill |
+| Merge commit triggers both `post-merge` and `post-commit` | Duplicate event for same sha | `post-merge` writes a 2s sentinel file; `post-commit` skips emit if sentinel matches its sha |
+| `inotifywait` fails to arm (watch limit exhausted, dir missing) | Silent FS-event blackout | Supervisor emits one `alert`-tier event then exits — silence becomes visible |
 | Self-suppression misfires (session id absent) | Agent sees own event | Acceptable for v1; tier `info`, low cost |
 
 ## Out-of-scope for v1
