@@ -1,0 +1,18 @@
+name: broadcastr
+bucket: local
+targets:
+  - claude
+description: |
+  Real-time activity broadcast across concurrent Claude Code sessions.
+  Captures commits, plan edits, bash commands into a shared JSONL bus;
+  each session sees what others are doing via the feed monitor.
+v2_planned:
+  - codex bridge (UserPromptSubmit injection or codex-app-server subscriber)
+  - polling emitters: PR / CI / docker events / cargo
+  - web UI / Aurora dashboard
+  - TUI consumer
+  - multi-host bus sync
+v2_blocked_on:
+  codex: "deferred; spec sec 'Codex (deferred)'"
+  polling-emitters: "v1 ships only event-driven sources"
+  multi-host: "needs relay process; out of scope for JSONL-only bus"
