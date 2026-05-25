@@ -21,7 +21,7 @@ touch "$BUS"
 
 STARTUP="$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
 
-cleanup() { kill 0 2>/dev/null || true; }
+cleanup() { pkill -P $$ 2>/dev/null || true; }
 trap cleanup SIGTERM SIGINT EXIT
 
 tail -n0 -F "$BUS" 2>/dev/null \

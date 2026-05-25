@@ -37,11 +37,12 @@ format_line() {
   '
 }
 
-cleanup() { kill 0 2>/dev/null || true; }
+cleanup() { pkill -P $$ 2>/dev/null || true; }
 trap cleanup SIGTERM SIGINT EXIT
 
 if [ "$WANT_GLOBAL" != "0" ]; then
-  tail -n0 -F "$PER_REPO_BUS" "$GLOBAL_BUS" 2>/dev/null | grep --line-buffered -v "^==>" | format_line
+  tail -n0 -F "$PER_REPO_BUS" "$GLOBAL_BUS" 2>/dev/null | grep --line-buffered -v "^==>" | format_line &
 else
-  tail -n0 -F "$PER_REPO_BUS" 2>/dev/null | format_line
+  tail -n0 -F "$PER_REPO_BUS" 2>/dev/null | format_line &
 fi
+wait
