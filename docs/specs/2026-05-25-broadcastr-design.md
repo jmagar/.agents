@@ -4,11 +4,11 @@
 **Date:** 2026-05-25
 **Plugin path:** `plugins/broadcastr/`
 **Author:** Jacob Magar
-**Marketplaces:** Claude Code + Codex (asymmetric — see [Codex story](#codex-story))
+**Marketplaces:** Claude Code only (Codex deferred — see [Codex (deferred)](#codex-deferred))
 
 ## Problem
 
-Multiple Claude / Codex agents frequently work concurrently on the same repo (and across repos in the homelab). Each agent is blind to what the others are doing — commits, plan edits, branch changes, container restarts, CI failures all happen invisibly. The user has to manually relay state between agents, and agents redo work that another agent already finished or step on each other.
+Multiple Claude Code agents frequently work concurrently on the same repo (and across repos in the homelab). Each agent is blind to what the others are doing — commits, plan edits, branch changes, container restarts, CI failures all happen invisibly. The user has to manually relay state between agents, and agents redo work that another agent already finished or step on each other.
 
 ## Goal
 
@@ -28,13 +28,12 @@ Three layers, glued by a shared JSONL bus:
 ```
 emitters → bus (JSONL) → consumers
    |                        |
-   |                        ├── agent monitor (Claude: in-session notifications)
-   |                        ├── userPromptSubmit hook (Codex: per-turn injection)
+   |                        ├── agent monitor (in-session notifications)
    |                        └── apprise gateway (alert-tier only → phone)
    |
    ├── claude code hooks (SessionStart, Stop, PostToolUse on Bash)
    ├── git hooks (post-commit, pre-commit, pre-push, post-checkout, post-merge)
-   ├── inotify monitors (long-running, watch plan/session/agent dirs)
+   ├── inotify monitors (long-running, watch plan/session dirs)
    └── manual cli (broadcastr emit ...)
 ```
 
@@ -47,9 +46,9 @@ Two parallel bus files. Producers write both (configurable via `BROADCASTR_GLOBA
 | File | Path | Purpose |
 |---|---|---|
 | Per-repo | `${CLAUDE_PROJECT_DIR}/.broadcastr/events.jsonl` | Repo-scoped activity. Gitignored. |
-| Global | `${BROADCASTR_HOME:-~/.claude/broadcastr}/events.jsonl` | Cross-repo homelab activity. Carries a `repo` field for filtering. |
+| Global | `${BROADCASTR_HOME:-~/.claude/broadcastr}/events.jsonl` | Host-local cross-repo activity. Carries a `repo` field for filtering. |
 
-**Why not `${CLAUDE_PLUGIN_DATA}` for the global bus?** `CLAUDE_PLUGIN_DATA` is per-plugin-id and not shared between Claude and Codex installs of the same plugin. The global bus must be reachable from both, so it lives at a stable, platform-neutral path.
+The global bus path is stable across Claude sessions and intentionally lives outside `${CLAUDE_PLUGIN_DATA}` so future emitters (e.g., a v2 Codex bridge or external CLI tools) can write to it without depending on Claude Code's plugin runtime.
 
 **Atomicity:** writes are line-oriented JSONL appended with `O_APPEND`, which POSIX guarantees is atomic for writes under `PIPE_BUF` (4096 bytes on Linux). All our events are well under that limit.
 
@@ -90,8 +89,8 @@ One JSON object per line. The schema lives at `plugins/broadcastr/schema.json` a
 | `tier` | `"info"` \| `"alert"` | drives apprise routing |
 | `category` | string | one of the 14 fixed categories below |
 | `source` | string | `claude-hook` \| `git-hook` \| `inotify` \| `poll` \| `cli` |
-| `emitter.session_id` | string \| null | Claude/Codex session id when known |
-| `emitter.agent` | string | `claude-code` \| `codex` \| `user` |
+| `emitter.session_id` | string \| null | Claude session id when known |
+| `emitter.agent` | string | `claude-code` \| `user` |
 | `emitter.host` | string | hostname |
 | `emitter.user` | string | `$USER` |
 | `repo` | string | absolute path to repo root |
@@ -127,7 +126,7 @@ ${CLAUDE_PLUGIN_ROOT}/scripts/emit.sh <category> <tier> <summary> [--data <json>
 
 `emit.sh` is the *only* code path that writes to the bus. It:
 1. Generates ULID and timestamp.
-2. Resolves emitter context: `CLAUDE_SESSION_ID`, `CODEX_SESSION_ID`, `HOSTNAME`, `USER`.
+2. Resolves emitter context: `CLAUDE_SESSION_ID`, `HOSTNAME`, `USER`.
 3. Atomically appends one JSONL line to the per-repo bus.
 4. If `BROADCASTR_GLOBAL_FEED=1` (default), atomically appends to the global bus too.
 5. No-ops silently if `BROADCASTR_DISABLED=1`.
@@ -154,13 +153,14 @@ The skill drops idempotent shim hooks into `.git/hooks/`. Each shim emits and th
 
 ### 3. inotify monitors — `plugins/broadcastr/monitors/monitors.json`
 
-Three long-running monitors, declared as plugin monitors so Claude Code starts them at session start. They are *not* consumers of the bus — they are producers of events from filesystem activity. (Claude consumers are described in the next section.)
+Two long-running monitors, declared as plugin monitors so Claude Code starts them at session start. They are *not* consumers of the bus — they are producers of events from filesystem activity. (Consumers are described in the next section.)
 
 | Monitor name | Watches | Emits |
 |---|---|---|
 | `broadcastr-plans` | `${CLAUDE_PROJECT_DIR}/docs/plans`, `${CLAUDE_PROJECT_DIR}/docs/superpowers/plans` | `plan`, `plan-exec` (on content marker change) |
 | `broadcastr-sessions` | `${CLAUDE_PROJECT_DIR}/docs/sessions` | `session-doc` |
-| `broadcastr-cross-agent` | `~/.claude/projects/`, `~/.codex/sessions/` | `agent-presence` (cross-editor detection, deduped by session id with the SessionStart hook) |
+
+Cross-session presence is handled by the `SessionStart` / `Stop` hooks fired by each Claude session. No global cross-agent watcher is needed in v1.
 
 ### 4. Manual CLI
 
@@ -172,7 +172,7 @@ Symlinked into `~/.local/bin` by the `broadcastr:install-hooks` skill on first r
 
 ## Consumers
 
-### Claude Code — agent feed monitor
+### Agent feed monitor
 
 `plugins/broadcastr/monitors/monitors.json` declares (alongside the inotify producers):
 
@@ -194,29 +194,6 @@ Symlinked into `~/.local/bin` by the `broadcastr:install-hooks` skill on first r
 7. Writes to stdout (which Claude Code surfaces as a notification per line).
 8. On `SIGTERM`, closes its `tail` child cleanly.
 
-### Codex — `UserPromptSubmit` hook injection
-
-Codex doesn't have a monitor-equivalent that auto-pushes stdout to the agent. Instead, on every user prompt:
-
-```json
-// .codex-plugin/plugin.json (excerpt)
-{
-  "hooks": {
-    "UserPromptSubmit": [
-      { "command": ["${CLAUDE_PLUGIN_ROOT}/scripts/codex-prompt-inject.sh"] }
-    ]
-  }
-}
-```
-
-`codex-prompt-inject.sh`:
-1. Reads `${BROADCASTR_HOME:-~/.claude/broadcastr}/sessions/<session-id>/last-prompt-ts` (or session start if absent). Lives outside `CLAUDE_PLUGIN_DATA` because that path is per-plugin-id and not stable across Claude / Codex installs of the same plugin.
-2. Reads all events from the bus with `ts > last-prompt-ts` and `emitter.session_id != $CODEX_SESSION_ID`.
-3. Prints them as a system-context block to stdout (which Codex injects into the next prompt).
-4. Updates `last-prompt-ts` to now.
-
-Outcome: Codex agents see new events at most one turn late, with zero polling cost.
-
 ### Apprise gateway — alert tier only
 
 ```json
@@ -229,42 +206,27 @@ Outcome: Codex agents see new events at most one turn late, with zero polling co
 
 `alert-gateway.sh` tails the global bus, filters for `tier == "alert"`, and shells out to `apprise --tag <user_config.apprise_tag> --body <summary>`. One notification per alert. Gated behind `user_config.apprise_enabled` (default `true`).
 
-## Asymmetries between Claude and Codex
+## Codex (deferred)
 
-| Capability | Claude Code | Codex |
-|---|---|---|
-| Hooks (SessionStart, Stop, UserPromptSubmit, PostToolUse) | ✓ | ✓ |
-| Plugin monitors (real-time stdout → notifications) | ✓ | ✗ |
-| Agent-side feed delivery | Live via monitor | Per-turn via UserPromptSubmit hook |
-| Apprise gateway | ✓ (runs from Claude's monitor) | Inherited (gateway runs once per host, not per agent) |
+Codex support is out of scope for v1. The bus, event schema, and emitters are intentionally agent-neutral so a Codex bridge can be added later without breaking changes. Two viable paths for a future v2:
 
-The bus and emitters are identical across both. Only the *consumer* side differs.
+- **`UserPromptSubmit` hook injection** — read new bus events on every user prompt and inject them as system context. Per-turn batching, zero polling. Mid-turn blindness is the trade-off.
+- **`codex app-server` subscriber** — subscribe to Codex's JSON-RPC notification stream over its unix socket (`$CODEX_HOME/app-server-control/app-server-control.sock`). Push-based, mid-turn parity with Claude's monitor. Only works when Codex is run through the app-server (VS Code extension), not the plain CLI.
 
-## Codex story
-
-(Cross-referenced from the asymmetry table.)
-
-Codex's plugin runtime has no equivalent of Claude's monitor → in-session notifications. We considered three options:
-
-- **(A) Read-on-demand** — agent runs `broadcastr recent --since=10m` when relevant. Lowest effort, but Codex agents need to remember to check.
-- **(B) UserPromptSubmit injection** — selected. Hook auto-injects new events on every user prompt. Per-turn batching, zero polling.
-- **(C) Background task + per-turn check** — spawn `tail -F` as a Codex background task and read its output file each turn. Mechanically equivalent to (B), with extra moving parts and job lifecycle to manage.
-
-**(B)** wins because it gives Codex the same UX as Claude (events show up automatically in-session) while honoring Codex's actual delivery model.
+Neither is implemented in v1.
 
 ## Layout
 
 ```
 plugins/broadcastr/
 ├── .claude-plugin/plugin.json       ← Claude manifest; requires v2.1.105+ for monitors
-├── .codex-plugin/plugin.json        ← Codex manifest; hooks-only
 ├── README.md
 ├── CHANGELOG.md
-├── schema.json                       ← event schema (shared)
+├── schema.json                       ← event schema
 ├── hooks/
 │   └── hooks.json                    ← Claude hooks: SessionStart, Stop, PostToolUse(Bash)
 ├── monitors/
-│   └── monitors.json                 ← feed + alert-gateway + 3 inotify producers
+│   └── monitors.json                 ← feed + alert-gateway + 2 inotify producers
 ├── skills/
 │   ├── broadcastr/                   ← user-facing: how to read the feed, mute categories, emit manually
 │   │   ├── SKILL.md
@@ -281,12 +243,10 @@ plugins/broadcastr/
 │   └── broadcastr                    ← CLI shim (emit, tail, status, recent, mute)
 ├── scripts/
 │   ├── emit.sh                       ← canonical event writer (atomic JSONL append, dual bus)
-│   ├── tail-bus.sh                   ← Claude feed monitor entry
+│   ├── tail-bus.sh                   ← feed monitor entry
 │   ├── alert-gateway.sh              ← apprise fan-out
-│   ├── codex-prompt-inject.sh        ← Codex UserPromptSubmit injection
 │   ├── watch-plans.sh                ← inotify producer for plan dirs
 │   ├── watch-sessions.sh             ← inotify producer for docs/sessions
-│   ├── watch-agents.sh               ← inotify producer for ~/.claude & ~/.codex
 │   └── git-hooks/                    ← templates installed into .git/hooks/
 │       ├── post-commit
 │       ├── pre-commit
@@ -325,6 +285,7 @@ Exposed at runtime as `${user_config.*}` substitution and as `CLAUDE_PLUGIN_OPTI
 
 ## Out-of-scope for v1
 
+- **Codex support** (see [Codex (deferred)](#codex-deferred)).
 - v2 polling emitters: PR status (`gh pr list`), CI/CD (`gh run list`), container events (`docker events`), cargo build watching.
 - Web UI / Aurora dashboard for the global feed.
 - TUI consumer (`broadcastr watch`).
@@ -338,7 +299,6 @@ None blocking. Decisions logged above.
 ## Success criteria
 
 1. Two Claude Code agents in two terminals on the same repo: agent A commits; agent B sees a notification line about it within one second.
-2. A Codex agent in a third terminal sees the same commit reflected in the system context of its next prompt.
-3. A `git push` failure produces an apprise notification on the user's phone.
-4. Stopping any of the agents does not leave dangling processes.
-5. Installing broadcastr into a repo with existing `.git/hooks/pre-commit` does not break the existing hook; uninstalling restores it.
+2. A `git push` failure produces an apprise notification on the user's phone.
+3. Stopping any of the agents does not leave dangling processes.
+4. Installing broadcastr into a repo with existing `.git/hooks/pre-commit` does not break the existing hook; uninstalling restores it.
