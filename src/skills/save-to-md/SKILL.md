@@ -1,6 +1,6 @@
 ---
 name: save-to-md
-description: Save session documentation to a markdown file with full context — date, branch, HEAD, session ID, and git state pre-injected. Use when the user says "save session", "save to md", "document this session", "write up what we did", "save session notes", or asks to capture the current conversation as a session log. Pass `--html` or a `.html` path to render a rich Aurora-styled HTML artifact instead. Also invoked automatically by quick-push before staging.
+description: Save session documentation to a markdown file with full context — date, branch, HEAD, session ID, and git state pre-injected — then stage, commit, and push only the generated session artifact. Use when the user says "save session", "save to md", "document this session", "write up what we did", "save session notes", or asks to capture the current conversation as a session log. Pass `--html` or a `.html` path to render a rich Aurora-styled HTML artifact instead.
 allowed-tools: Write, Read, Bash
 argument-hint: "[--html] [path]"
 ---
@@ -29,7 +29,7 @@ argument-hint: "[--html] [path]"
 
 # Save Session Documentation
 
-Document the **entire conversation session** (not just recent work) as a markdown file at `$ARGUMENTS`. If the injected `Transcript` path above is non-empty, read it to recover the full session (the current context window may be truncated). If no path is provided, save to `docs/sessions/YYYY-MM-DD-description.md` under the repo root.
+Document the **entire conversation session** (not just recent work) as a markdown or HTML file at `$ARGUMENTS`. If the injected `Transcript` path above is non-empty, read it to recover the full session (the current context window may be truncated). If no path is provided, save to `docs/sessions/YYYY-MM-DD-description.md` under the repo root.
 
 ## Output format
 
@@ -38,7 +38,7 @@ The default format is markdown (`.md`). To produce a rich Aurora-styled HTML art
 - Pass `--html` as the first argument, with or without a path. Default path becomes `docs/sessions/YYYY-MM-DD-description.html`.
 - Pass a path that ends in `.html`. Format follows the extension.
 
-Otherwise default to markdown. Markdown remains the contract that `quick-push` relies on; never silently switch formats.
+Otherwise default to markdown. Never silently switch formats.
 
 If the resolved format is HTML, follow the **HTML rendering** section near the bottom of this file instead of the markdown structure below. All other rules (Repository Maintenance Pass, content quality, path rules, final-path print) still apply identically.
 
@@ -96,7 +96,22 @@ Then include these sections:
 17. **Open Questions**: Unresolved items or assumptions that need follow-up — omit if none
 18. **Next Steps**: Clear, actionable guidance for how to proceed. Distinguish unfinished work from this session, follow-on tasks not yet started, blocked tasks, and recommended immediate next commands
 
-After writing the file, print the final absolute path so callers (e.g., `quick-push`) can reference it.
+After writing the file, print the final absolute path.
+
+## Session File Commit and Push
+
+Immediately after writing the session artifact, stage, commit, and push **only that generated file**. This is part of the `save-to-md` contract, not a caller responsibility.
+
+Rules:
+- Resolve the final artifact path to one absolute path under the repo root and store it as the session artifact path.
+- Stage only that path with `git add -f -- <session-artifact-path>`. Use `-f` because `docs/sessions/` is commonly ignored.
+- Commit only that path with `git commit -m "docs: save session log" --only -- <session-artifact-path>`. This path-limited commit is mandatory so pre-existing staged or dirty files are not included.
+- If the current branch has no upstream, push with `git push -u origin HEAD`; otherwise use `git push`.
+- Do not run `git add .`, `git add -A`, broad pathspecs, or any command that stages or commits non-session files.
+- If `git commit -m "docs: save session log" --only -- <session-artifact-path>` reports there is nothing to commit because the generated content is unchanged, do not create an empty commit. Report that no session-file commit was needed, then continue to push only if the branch is ahead of its upstream.
+- If the target is outside a git repository, write the file and report that the commit/push step was skipped because no repo was available.
+- If push fails, diagnose and retry after non-destructive fixes. Do not use force push.
+- After the push, verify the committed file set with `git show --name-only --format= --stat HEAD` or `git diff-tree --no-commit-id --name-only -r HEAD`. The only path in the session-file commit must be the generated artifact path. If any other path appears, report it as a workflow failure.
 
 Content quality rules:
 - Facts only. Do not infer values that were not observed in tool/command output.
