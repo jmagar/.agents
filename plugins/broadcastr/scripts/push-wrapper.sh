@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 # Optional: shell wrapper that observes `git push` outcome.
 # Source this from your shell rc, then `alias git-push=broadcastr-push`.
-set -uo pipefail
+#
+# IMPORTANT: this file is meant to be sourced. It does NOT enable strict
+# mode at the top level — that would pollute the user's interactive shell.
+# Defensive flags are set inside the function instead.
+
 PLUGIN_ROOT="${BROADCASTR_PLUGIN_ROOT:-$HOME/.claude/plugins/broadcastr}"
 
 broadcastr-push() {
-  local out
-  local rc=0
-  local branch
+  local out rc=0 branch
   branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')"
 
   if out=$(git push "$@" 2>&1); then
@@ -25,6 +27,6 @@ broadcastr-push() {
       --summary "push FAILED: $branch (exit $rc)" \
       --data "{\"subtype\":\"fail\",\"exit\":$rc}"
     printf '%s\n' "$out" >&2
-    return $rc
+    return "$rc"
   fi
 }

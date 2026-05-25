@@ -13,17 +13,14 @@ handle() {
     *.md)
       local base
       base="$(basename "$path")"
+      local data='{}'
+      if command -v jq >/dev/null 2>&1; then
+        data="$(jq -nc --arg path "$path" '{path:$path}')"
+      fi
       "$PLUGIN_ROOT/scripts/emit.sh" \
         --category plan --tier info --source inotify \
         --summary "plan edit: $base" \
-        --data "{\"path\":\"$path\"}"
-      # plan-exec marker: detect when a step is being checked off
-      if grep -qE '^- \[(x|X)\] \*\*Step' "$path" 2>/dev/null; then
-        "$PLUGIN_ROOT/scripts/emit.sh" \
-          --category plan-exec --tier info --source inotify \
-          --summary "plan progress: $base" \
-          --data "{\"path\":\"$path\"}"
-      fi
+        --data "$data"
       ;;
   esac
 }

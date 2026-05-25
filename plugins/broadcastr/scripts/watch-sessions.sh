@@ -10,10 +10,14 @@ handle() {
     *.md)
       local base
       base="$(basename "$path")"
+      local data='{}'
+      if command -v jq >/dev/null 2>&1; then
+        data="$(jq -nc --arg path "$path" '{path:$path}')"
+      fi
       "$PLUGIN_ROOT/scripts/emit.sh" \
         --category session-doc --tier info --source inotify \
         --summary "session doc: $base" \
-        --data "{\"path\":\"$path\"}"
+        --data "$data"
       ;;
   esac
 }

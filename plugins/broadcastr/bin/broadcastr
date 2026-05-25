@@ -7,6 +7,10 @@ cmd="${1:-help}"; shift || true
 
 case "$cmd" in
   emit)
+    if [ "$#" -lt 3 ]; then
+      echo "usage: broadcastr emit <category> <tier> <summary> [--data <json>]" >&2
+      exit 64
+    fi
     cat=$1; tier=$2; summary=$3; shift 3
     exec "$PLUGIN_ROOT/scripts/emit.sh" --category "$cat" --tier "$tier" --summary "$summary" "$@"
     ;;
@@ -46,16 +50,6 @@ case "$cmd" in
     printf '  disabled=%s  global_feed=%s  mute=%s\n' \
       "${BROADCASTR_DISABLED:-0}" "${BROADCASTR_GLOBAL_FEED:-1}" "${BROADCASTR_MUTE:-}"
     ;;
-  mute)
-    list="$1"
-    cur="${BROADCASTR_MUTE:-}"
-    if [ -n "$cur" ]; then
-      printf 'export BROADCASTR_MUTE=%s,%s\n' "$cur" "$list"
-    else
-      printf 'export BROADCASTR_MUTE=%s\n' "$list"
-    fi
-    printf '# eval the line above to apply in this shell\n'
-    ;;
   help|*)
     cat <<EOF
 broadcastr - shared activity bus for concurrent Claude sessions
@@ -65,7 +59,9 @@ Usage:
   broadcastr tail
   broadcastr recent [--since=5m]
   broadcastr status
-  broadcastr mute <category>[,<category>...]
+
+To mute categories in the current shell, export BROADCASTR_MUTE:
+  export BROADCASTR_MUTE=plan-exec,session-doc
 EOF
     ;;
 esac

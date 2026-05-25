@@ -33,22 +33,28 @@ for hook in post-commit pre-commit pre-push post-checkout post-merge; do
     "export BROADCASTR_PLUGIN_ROOT" \
     "exec '$src' \"\$@\"")"
 
+  # Write atomically via temp file + rename so a partially-written shim
+  # never lands at $dst (would corrupt the chain on next invocation).
+  write_atomic() {
+    local target=$1 contents=$2
+    local tmp="${target}.broadcastr.tmp.$$"
+    printf '%s\n' "$contents" > "$tmp"
+    chmod +x "$tmp"
+    mv "$tmp" "$target"
+  }
+
   if [ -e "$dst" ]; then
     if is_broadcastr_shim "$dst"; then
-      # Already our shim — rewrite (idempotent), do not touch .broadcastr-prev
-      printf '%s\n' "$shim_contents" > "$dst"
-      chmod +x "$dst"
+      write_atomic "$dst" "$shim_contents"
       continue
     fi
-    # Real pre-existing hook — preserve it once
     if [ ! -e "$prev" ]; then
       mv "$dst" "$prev"
       chmod +x "$prev"
     fi
   fi
 
-  printf '%s\n' "$shim_contents" > "$dst"
-  chmod +x "$dst"
+  write_atomic "$dst" "$shim_contents"
 done
 
 echo "broadcastr: installed shims into $HOOK_DIR"

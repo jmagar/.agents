@@ -12,6 +12,17 @@ GLOBAL_HOME="${BROADCASTR_HOME:-$HOME/.claude/broadcastr}"
 GLOBAL_BUS="$GLOBAL_HOME/events.jsonl"
 WANT_GLOBAL="${BROADCASTR_GLOBAL_FEED:-1}"
 
+# Fail loudly at startup if jq is missing — otherwise the filter pipeline
+# would silently produce zero output and the user would see no feed.
+if ! command -v jq >/dev/null 2>&1; then
+  echo "broadcastr-feed: jq not installed; feed monitor exiting" >&2
+  "$PLUGIN_ROOT/scripts/emit.sh" \
+    --category agent-presence --tier alert --source claude-hook \
+    --summary "broadcastr-feed: jq missing; feed disabled this session" \
+    --data '{"monitor":"broadcastr-feed"}' 2>/dev/null || true
+  exit 0
+fi
+
 mkdir -p "$(dirname "$PER_REPO_BUS")"
 touch "$PER_REPO_BUS"
 if [ "$WANT_GLOBAL" != "0" ]; then

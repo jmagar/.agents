@@ -1,10 +1,9 @@
 use chrono::Utc;
 use clap::Parser;
-use fs2::FileExt;
 use serde::Serialize;
 use serde_json::{Value, json};
-use std::fs::{OpenOptions, create_dir_all};
-use std::os::unix::io::AsRawFd;
+use std::fs::{File, OpenOptions, create_dir_all};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use ulid::Ulid;
 
@@ -34,34 +33,48 @@ struct Emitter {
 }
 
 fn main() {
+    // Hooks invoke this on every Bash tool call. Best-effort: never panic
+    // out, never bubble a non-zero exit to the caller. Failures get logged
+    // to stderr (which Claude Code typically discards for hooks) and we
+    // exit 0 so the user's actual workflow is unaffected.
+    if let Err(e) = try_main() {
+        eprintln!("broadcastr-emit: {e}");
+    }
+}
+
+fn try_main() -> std::io::Result<()> {
     if std::env::var("BROADCASTR_DISABLED").as_deref() == Ok("1") {
-        return;
+        return Ok(());
     }
     let args = Args::parse();
 
     let repo = std::env::var("CLAUDE_PROJECT_DIR")
         .or_else(|_| std::env::var("PWD"))
         .unwrap_or_else(|_| ".".to_string());
-    let repo_path = PathBuf::from(&repo);
-    let per_repo_bus = repo_path.join(".broadcastr/events.jsonl");
+    let per_repo_bus = PathBuf::from(&repo).join(".broadcastr/events.jsonl");
 
-    let home = std::env::var("BROADCASTR_HOME")
+    let global_bus = std::env::var("BROADCASTR_HOME")
         .ok()
         .map(PathBuf::from)
-        .or_else(|| std::env::var("HOME").ok().map(|h| PathBuf::from(h).join(".claude/broadcastr")));
-    let global_bus = home.as_ref().map(|h| h.join("events.jsonl"));
+        .or_else(|| {
+            std::env::var("HOME")
+                .ok()
+                .map(|h| PathBuf::from(h).join(".claude/broadcastr"))
+        })
+        .map(|h| h.join("events.jsonl"));
 
     let event = build_event(&args, &repo);
-    let line = serde_json::to_string(&event).expect("serialize event");
+    let line = serde_json::to_string(&event)
+        .map_err(|e| std::io::Error::other(format!("serialize event: {e}")))?;
 
-    append_line(&per_repo_bus, &line);
+    append_line(&per_repo_bus, &line)?;
 
-    let want_global = std::env::var("BROADCASTR_GLOBAL_FEED").as_deref() != Ok("0");
-    if want_global {
-        if let Some(g) = global_bus {
-            append_line(&g, &line);
-        }
+    if std::env::var("BROADCASTR_GLOBAL_FEED").as_deref() != Ok("0")
+        && let Some(g) = global_bus
+    {
+        append_line(&g, &line)?;
     }
+    Ok(())
 }
 
 fn build_event(args: &Args, repo: &str) -> Value {
@@ -93,93 +106,90 @@ fn build_event(args: &Args, repo: &str) -> Value {
     event
 }
 
-fn append_line(bus: &Path, line: &str) {
+fn append_line(bus: &Path, line: &str) -> std::io::Result<()> {
     if let Some(parent) = bus.parent() {
-        let _ = create_dir_all(parent);
+        create_dir_all(parent)?;
     }
-    maybe_rotate(bus);
-    let f = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(bus)
-        .expect("open bus");
+    maybe_rotate(bus)?;
+    let mut f = OpenOptions::new().create(true).append(true).open(bus)?;
+    // Single combined buffer + write_all. Under O_APPEND, std's write_all
+    // issues a single write(2) for small buffers (well under PIPE_BUF) and
+    // loops on EINTR / short writes if they ever occur. Each kernel-level
+    // write under O_APPEND atomically seeks to EOF, so concurrent emitters
+    // cannot interleave bytes within a single write call.
     let mut buf = String::with_capacity(line.len() + 1);
     buf.push_str(line);
     buf.push('\n');
-    // Direct libc::write() — single syscall. O_APPEND + buf < PIPE_BUF (4096)
-    // is atomic per POSIX. Loop only on EINTR (signal interruption); any
-    // other short/error result is a real failure.
-    let bytes = buf.as_bytes();
-    let fd = f.as_raw_fd();
-    loop {
-        let n = unsafe { libc::write(fd, bytes.as_ptr() as *const _, bytes.len()) };
-        if n == bytes.len() as isize {
-            break;
-        }
-        let err = std::io::Error::last_os_error();
-        if err.raw_os_error() == Some(libc::EINTR) {
-            continue;
-        }
-        panic!("write failed: {} of {} bytes, errno {:?}", n, bytes.len(), err);
-    }
+    f.write_all(buf.as_bytes())?;
+    Ok(())
 }
 
-fn maybe_rotate(bus: &Path) {
+fn maybe_rotate(bus: &Path) -> std::io::Result<()> {
     let max_bytes: u64 = std::env::var("BROADCASTR_BUS_MAX_BYTES")
         .ok()
         .and_then(|s| s.parse().ok())
         .unwrap_or(5 * 1024 * 1024);
+    // Retain has a minimum of 1: we always rename bus → bus.1 unconditionally
+    // when rotating, so any lower value is meaningless.
     let retain: u32 = std::env::var("BROADCASTR_BUS_RETAIN")
         .ok()
         .and_then(|s| s.parse().ok())
-        .unwrap_or(3);
+        .unwrap_or(3)
+        .max(1);
 
     let size = match std::fs::metadata(bus) {
         Ok(m) => m.len(),
-        Err(_) => return,
+        Err(_) => return Ok(()),
     };
     if size < max_bytes {
-        return;
+        return Ok(());
     }
 
-    let lock_path = bus.with_extension("jsonl.rotate.lock");
-    let lock_file = match OpenOptions::new().create(true).write(true).truncate(false).open(&lock_path) {
-        Ok(f) => f,
-        Err(_) => return,
-    };
-    if FileExt::try_lock_exclusive(&lock_file).is_err() {
-        return;
+    let base_name = bus
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_else(|| "events.jsonl".to_string());
+    let lock_path = bus.with_file_name(format!("{base_name}.rotate.lock"));
+    let lock_file = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(false)
+        .open(&lock_path)?;
+    // Non-blocking exclusive lock: losers skip rotation this turn; the next
+    // emit will retry. File::try_lock returns Result<(), TryLockError>:
+    // Ok(()) on acquired, Err(TryLockError::WouldBlock) on contention,
+    // Err(TryLockError::Error(_)) on real failures.
+    if File::try_lock(&lock_file).is_err() {
+        return Ok(());
     }
+    // Lock is released when `lock_file` drops at end of scope.
 
     // Re-check size under lock (TOCTOU)
     let size = match std::fs::metadata(bus) {
         Ok(m) => m.len(),
-        Err(_) => {
-            let _ = FileExt::unlock(&lock_file);
-            return;
-        }
+        Err(_) => return Ok(()),
     };
     if size < max_bytes {
-        let _ = FileExt::unlock(&lock_file);
-        return;
+        return Ok(());
     }
 
-    let base_name = bus.file_name().unwrap().to_string_lossy().to_string();
-
-    // Shift rotations: .N-1 -> .N for N from retain down to 1
+    // Shift rotations: .N-1 → .N for i from retain-1 down to 1.
+    // Renames that fail (EACCES, no such file across rotations) are
+    // intentionally swallowed: we cannot meaningfully recover, and the
+    // upper bound on damage is "one rotation slot's worth of events lost"
+    // which is already the documented best-effort contract.
     for i in (1..retain).rev() {
-        let from = bus.with_file_name(format!("{}.{}", base_name, i));
-        let to = bus.with_file_name(format!("{}.{}", base_name, i + 1));
+        let from = bus.with_file_name(format!("{base_name}.{i}"));
+        let to = bus.with_file_name(format!("{base_name}.{}", i + 1));
         if from.exists() {
             let _ = std::fs::rename(&from, &to);
         }
     }
-    let dot1 = bus.with_file_name(format!("{}.1", base_name));
+    let dot1 = bus.with_file_name(format!("{base_name}.1"));
     let _ = std::fs::rename(bus, &dot1);
     // Touch the new bus into existence WITHOUT truncating — concurrent
     // emitters may have already raced through O_CREAT|O_APPEND and written
     // events here; we must preserve them.
     let _ = OpenOptions::new().create(true).append(true).open(bus);
-
-    let _ = FileExt::unlock(&lock_file);
+    Ok(())
 }

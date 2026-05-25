@@ -9,6 +9,20 @@ fi
 
 if ! command -v apprise >/dev/null 2>&1; then
   echo "broadcastr: apprise CLI not installed; alert gateway exiting" >&2
+  # Self-broadcast the failure so the user sees it in the feed
+  "${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}/scripts/emit.sh" \
+    --category agent-presence --tier alert --source claude-hook \
+    --summary "broadcastr-alerts: apprise CLI missing; phone alerts disabled" \
+    --data '{"monitor":"broadcastr-alerts"}' 2>/dev/null || true
+  exit 0
+fi
+
+if ! command -v jq >/dev/null 2>&1; then
+  echo "broadcastr-alerts: jq not installed; alert gateway exiting" >&2
+  "${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}/scripts/emit.sh" \
+    --category agent-presence --tier alert --source claude-hook \
+    --summary "broadcastr-alerts: jq missing; alert routing disabled" \
+    --data '{"monitor":"broadcastr-alerts"}' 2>/dev/null || true
   exit 0
 fi
 
@@ -30,5 +44,8 @@ tail -n0 -F "$BUS" 2>/dev/null \
       | select(.ts > $startup)
       | .summary' \
   | while IFS= read -r line; do
-      apprise --tag "$TAG" --body "$line" >/dev/null 2>&1 || true
+      [ -z "$line" ] && continue
+      if ! apprise --tag "$TAG" --body "$line" >/dev/null 2>&1; then
+        echo "broadcastr-alerts: apprise dispatch failed for: $line" >&2
+      fi
     done

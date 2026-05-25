@@ -10,11 +10,17 @@ REMOTE="${1:-?}"
 URL="${2:-?}"
 BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')"
 
+DATA="{\"subtype\":\"attempt\"}"
+if command -v jq >/dev/null 2>&1; then
+  DATA="$(jq -nc --arg remote "$REMOTE" --arg url "$URL" \
+    '{remote:$remote, url:$url, subtype:"attempt"}')"
+fi
+
 "$PLUGIN_ROOT/scripts/emit.sh" \
   --category push --tier info --source git-hook \
   --branch "$BRANCH" \
   --summary "push-attempt: $BRANCH -> $REMOTE" \
-  --data "{\"remote\":\"$REMOTE\",\"url\":\"$URL\",\"subtype\":\"attempt\"}"
+  --data "$DATA"
 
 if [ -x "$PREV" ]; then
   exec "$PREV" "$@"
