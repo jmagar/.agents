@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -uo pipefail
+PLUGIN_ROOT="${BROADCASTR_PLUGIN_ROOT:-$HOME/.claude/plugins/broadcastr}"
+HOOK_DIR="$(dirname "$0")"
+PREV="$HOOK_DIR/pre-commit.broadcastr-prev"
+BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')"
+
+"$PLUGIN_ROOT/scripts/emit.sh" \
+  --category pre-commit --tier info --source git-hook \
+  --branch "$BRANCH" \
+  --summary "pre-commit start on $BRANCH"
+
+rc=0
+if [ -x "$PREV" ]; then
+  "$PREV" "$@" || rc=$?
+fi
+
+if [ "$rc" -eq 0 ]; then
+  "$PLUGIN_ROOT/scripts/emit.sh" \
+    --category pre-commit --tier info --source git-hook \
+    --branch "$BRANCH" \
+    --summary "pre-commit pass on $BRANCH"
+else
+  "$PLUGIN_ROOT/scripts/emit.sh" \
+    --category pre-commit --tier alert --source git-hook \
+    --branch "$BRANCH" \
+    --summary "pre-commit FAIL on $BRANCH (exit $rc)" \
+    --data "{\"exit\":$rc}"
+fi
+exit $rc
