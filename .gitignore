@@ -8,7 +8,8 @@
 .env
 # MCP server credentials
 src/mcp/.env
-
+.worktrees/
+.claude/worktrees/
 # Python caches
 __pycache__/
 *.py[cod]
