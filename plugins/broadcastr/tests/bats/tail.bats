@@ -51,6 +51,24 @@ teardown() { rm -rf "$TMP"; }
   ! grep -q "muted-event" "$TMP/out.txt"
 }
 
+@test "tail-bus dedups events that appear in both buses" {
+  # Enable global bus + tail both. Single emit should produce a single
+  # notification line, not two.
+  unset BROADCASTR_GLOBAL_FEED
+  export BROADCASTR_GLOBAL_FEED=1
+
+  ( CLAUDE_SESSION_ID=mine timeout 3 "$PLUGIN_ROOT/scripts/tail-bus.sh" > "$TMP/out.txt" 2>&1 || true ) &
+  TAILPID=$!
+  sleep 1
+  CLAUDE_SESSION_ID=other "$PLUGIN_ROOT/scripts/emit.sh" --category commit --tier info --summary "dedup-event"
+  sleep 1.5
+  kill $TAILPID 2>/dev/null || true
+  wait 2>/dev/null || true
+
+  count=$(grep -c "dedup-event" "$TMP/out.txt" || true)
+  [ "$count" = "1" ] || { echo "expected 1, got $count"; cat "$TMP/out.txt"; false; }
+}
+
 @test "tail-bus drops pre-startup events" {
   CLAUDE_SESSION_ID=other "$PLUGIN_ROOT/scripts/emit.sh" --category commit --tier info --summary "before-start"
   sleep 1.1

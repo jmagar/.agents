@@ -40,11 +40,36 @@ format_line() {
   '
 }
 
+# Dedup by event id: every emit writes to BOTH per-repo and global buses
+# when BROADCASTR_GLOBAL_FEED=1, so `tail -F file1 file2` sees the same
+# event twice. Strip duplicates by ULID before formatting. The first
+# occurrence wins; subsequent identical ids are dropped.
+dedup_events() {
+  awk '
+    {
+      if (match($0, /"id":"evt_[^"]+"/)) {
+        id = substr($0, RSTART, RLENGTH)
+        if (!(id in seen)) {
+          seen[id] = 1
+          print
+          fflush()
+        }
+      } else {
+        print
+        fflush()
+      }
+    }
+  '
+}
+
 cleanup() { pkill -P $$ 2>/dev/null || true; }
 trap cleanup SIGTERM SIGINT EXIT
 
 if [ "$WANT_GLOBAL" != "0" ]; then
-  tail -n0 -F "$PER_REPO_BUS" "$GLOBAL_BUS" 2>/dev/null | grep --line-buffered -v "^==>" | format_line &
+  tail -n0 -F "$PER_REPO_BUS" "$GLOBAL_BUS" 2>/dev/null \
+    | grep --line-buffered -v "^==>" \
+    | dedup_events \
+    | format_line &
 else
   tail -n0 -F "$PER_REPO_BUS" 2>/dev/null | format_line &
 fi
