@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -uo pipefail
 PLUGIN_ROOT="${BROADCASTR_PLUGIN_ROOT:-$HOME/.claude/plugins/broadcastr}"
-HOOK_DIR="$(dirname "$0")"
+HOOK_DIR="${BROADCASTR_HOOK_DIR:-$(dirname "$0")}"
 PREV="$HOOK_DIR/post-checkout.broadcastr-prev"
 
 PREV_REF="${1:-?}"

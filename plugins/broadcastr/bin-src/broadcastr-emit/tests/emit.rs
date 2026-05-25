@@ -61,6 +61,36 @@ fn emit_writes_to_global_bus_when_enabled() {
 }
 
 #[test]
+fn emit_wraps_malformed_data_with_parse_error_envelope() {
+    let tmp = TempDir::new().unwrap();
+    let repo = tmp.path().join("repo");
+    fs::create_dir_all(repo.join(".broadcastr")).unwrap();
+
+    Command::new(env!("CARGO_BIN_EXE_broadcastr-emit"))
+        .env("CLAUDE_PROJECT_DIR", &repo)
+        .env("BROADCASTR_GLOBAL_FEED", "0")
+        .env("HOSTNAME", "h")
+        .env("USER", "u")
+        .env_remove("BROADCASTR_DISABLED")
+        .args([
+            "--category", "commit", "--tier", "info", "--summary", "x",
+            "--data", "not json at all",
+        ])
+        .status()
+        .unwrap();
+
+    let bus = fs::read_to_string(repo.join(".broadcastr/events.jsonl")).unwrap();
+    let evt: serde_json::Value = serde_json::from_str(bus.trim()).unwrap();
+    assert_eq!(evt["data"]["_raw"], "not json at all");
+    assert!(
+        evt["data"]["_parse_error"]
+            .as_str()
+            .unwrap_or("")
+            .contains("invalid JSON")
+    );
+}
+
+#[test]
 fn emit_is_silent_when_disabled() {
     let tmp = TempDir::new().unwrap();
     let repo = tmp.path().join("repo");

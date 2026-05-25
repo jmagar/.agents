@@ -84,11 +84,19 @@ fn build_event(args: &Args, repo: &str) -> Value {
     let user = std::env::var("USER").unwrap_or_else(|_| "unknown".to_string());
     let ulid = Ulid::new().to_string();
     let ts = Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string();
-    let data: Value = args
-        .data
-        .as_deref()
-        .map(|s| serde_json::from_str(s).unwrap_or(json!({})))
-        .unwrap_or(json!({}));
+    // Malformed --data is preserved in an envelope with a parse-error
+    // marker, matching the bash fallback's contract. Silent coercion to
+    // `{}` would mask hook bugs that produce bad JSON.
+    let data: Value = match args.data.as_deref() {
+        None => json!({}),
+        Some(s) => match serde_json::from_str::<Value>(s) {
+            Ok(v) => v,
+            Err(e) => json!({
+                "_parse_error": format!("invalid JSON in --data: {e}"),
+                "_raw": s,
+            }),
+        },
+    };
     let mut event = json!({
         "ts": ts,
         "id": format!("evt_{}", ulid),

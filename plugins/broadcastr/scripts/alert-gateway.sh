@@ -2,29 +2,24 @@
 # Tails the global bus, filters tier=="alert", shells to apprise.
 set -uo pipefail
 
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+
 if [ "${CLAUDE_PLUGIN_OPTION_APPRISE_ENABLED:-true}" != "true" ]; then
   echo "broadcastr: apprise disabled by config" >&2
   exit 0
 fi
 
 if ! command -v apprise >/dev/null 2>&1; then
-  echo "broadcastr: apprise CLI not installed; alert gateway exiting" >&2
-  # Self-broadcast the failure so the user sees it in the feed
-  "${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}/scripts/emit.sh" \
+  echo "broadcastr-alerts: apprise CLI missing; alert gateway exiting" >&2
+  "$PLUGIN_ROOT/scripts/emit.sh" \
     --category agent-presence --tier alert --source claude-hook \
     --summary "broadcastr-alerts: apprise CLI missing; phone alerts disabled" \
     --data '{"monitor":"broadcastr-alerts"}' 2>/dev/null || true
   exit 0
 fi
 
-if ! command -v jq >/dev/null 2>&1; then
-  echo "broadcastr-alerts: jq not installed; alert gateway exiting" >&2
-  "${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}/scripts/emit.sh" \
-    --category agent-presence --tier alert --source claude-hook \
-    --summary "broadcastr-alerts: jq missing; alert routing disabled" \
-    --data '{"monitor":"broadcastr-alerts"}' 2>/dev/null || true
-  exit 0
-fi
+. "$PLUGIN_ROOT/scripts/lib-jq-guard.sh"
+require_jq broadcastr-alerts
 
 GLOBAL_HOME="${BROADCASTR_HOME:-$HOME/.claude/broadcastr}"
 BUS="$GLOBAL_HOME/events.jsonl"

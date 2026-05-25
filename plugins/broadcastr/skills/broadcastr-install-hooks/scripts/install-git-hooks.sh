@@ -26,11 +26,16 @@ for hook in post-commit pre-commit pre-push post-checkout post-merge; do
   dst="$HOOK_DIR/$hook"
   prev="$dst.broadcastr-prev"
 
+  # Shim exports BROADCASTR_HOOK_DIR so the plugin script can find the
+  # repo's .git/hooks/ (where .broadcastr-prev legacy hooks live).
+  # `dirname "$0"` inside the plugin script resolves to the plugin tree,
+  # NOT the .git/hooks/ dir, so we have to pass it through.
   shim_contents="$(printf '%s\n' \
     '#!/usr/bin/env bash' \
     '# broadcastr-install-hooks SHIM v1' \
     "BROADCASTR_PLUGIN_ROOT='$PLUGIN_ROOT'" \
-    "export BROADCASTR_PLUGIN_ROOT" \
+    'BROADCASTR_HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"' \
+    "export BROADCASTR_PLUGIN_ROOT BROADCASTR_HOOK_DIR" \
     "exec '$src' \"\$@\"")"
 
   # Write atomically via temp file + rename so a partially-written shim

@@ -12,18 +12,6 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 0
 fi
 
-# Bootstrap signal: the first time the fallback runs in a session, write one
-# event so the user knows IDs aren't ULID-monotonic and the Rust binary
-# isn't being used.
-GLOBAL_HOME="${BROADCASTR_HOME:-$HOME/.claude/broadcastr}"
-mkdir -p "$GLOBAL_HOME"
-BOOTSTRAP_MARKER="$GLOBAL_HOME/.fallback-bootstrap.$$"
-if [ ! -f "$BOOTSTRAP_MARKER" ]; then
-  : > "$BOOTSTRAP_MARKER"
-  # Don't recurse: we set this marker BEFORE the recursive emit so the inner
-  # invocation sees the marker and skips re-emitting.
-fi
-
 CATEGORY="" TIER="" SUMMARY="" SOURCE=cli DATA="{}" BRANCH=""
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -43,6 +31,7 @@ done
 
 REPO="${CLAUDE_PROJECT_DIR:-$PWD}"
 PER_REPO_BUS="$REPO/.broadcastr/events.jsonl"
+GLOBAL_HOME="${BROADCASTR_HOME:-$HOME/.claude/broadcastr}"
 GLOBAL_BUS="$GLOBAL_HOME/events.jsonl"
 
 TS="$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
