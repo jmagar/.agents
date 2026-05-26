@@ -4,22 +4,44 @@ PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && p
 
 CWD="${CLAUDE_PROJECT_DIR:-}"
 
-cwd_label() {
+agent_label() {
+  local agent="${BROADCASTR_AGENT_NAME:-${BROADCASTR_AGENT:-}}"
+  case "${agent,,}" in
+    codex) printf 'Codex' ;;
+    gemini) printf 'Gemini' ;;
+    claude|claude-code|"") printf 'Claude' ;;
+    *) printf '%s' "$agent" ;;
+  esac
+}
+
+project_label() {
   if [ -z "$1" ]; then
     printf '?'
     return
   fi
-  local normalized label
+  local normalized before rest project label
   normalized="$(printf '%s' "$1" | sed 's#\\#/#g; s#/*$##')"
+
+  case "$normalized" in
+    */.worktrees/*)
+      before="${normalized%%/.worktrees/*}"
+      rest="${normalized#*/.worktrees/}"
+      project="${before##*/}"
+      printf '%s/.worktrees/%s' "${project:-?}" "$rest"
+      return
+      ;;
+  esac
+
   label="${normalized##*/}"
   printf '%s' "${label:-$normalized}"
 }
 
-SUMMARY="joined: $(cwd_label "$CWD")"
+AGENT="$(agent_label)"
+SUMMARY="${AGENT} joined: \`$(project_label "$CWD")\`"
 
 # Build --data via jq so a CWD with quotes/backslashes/newlines doesn't
 # corrupt the event JSON.
-DATA="$(jq -nc --arg cwd "$CWD" '{action:"joined", cwd:$cwd}' 2>/dev/null || echo '{"action":"joined"}')"
+DATA="$(jq -nc --arg cwd "$CWD" --arg agent "$AGENT" '{action:"joined", cwd:$cwd, agent:$agent}' 2>/dev/null || echo '{"action":"joined"}')"
 
 "$PLUGIN_ROOT/scripts/emit.sh" \
   --category agent-presence --tier info --source claude-hook \
