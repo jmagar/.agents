@@ -11,6 +11,7 @@ Use this skill for the whole yt-dlp domain: ad hoc video downloads, playlists, c
 
 - Download only content the user is authorized to download, such as their own uploads, public-domain material, Creative Commons/licensed content, or content they otherwise have rights to keep.
 - Prefer the NAS/MeTube path for ad hoc downloads that should land in Plex.
+- Default to audio-only downloads. Use video mode only when the user asks for video, visual media, Plex video library, or explicitly passes `--video`.
 - Use local `yt-dlp` only when the user asks for local output, debugging, inspection, search, or a destination outside the NAS.
 - Prefer preview and confirmation before downloading ambiguous searches, full albums, large channels, very large playlists, or unofficial uploads.
 - Do not invent metadata. Preserve extracted metadata and sidecars; report missing fields instead of guessing.
@@ -20,21 +21,21 @@ Use this skill for the whole yt-dlp domain: ad hoc video downloads, playlists, c
 
 ### NAS / Plex downloads
 
-Default for explicit URLs unless the user says local:
+Default for explicit URLs unless the user says local or video:
 
 ```text
 MeTube: https://metube.tootie.tv
-Video output: /mnt/user/data/media/yt-dlp
-Plex library: yt-dlp
-Plex path: /data/yt-dlp
 Audio output: /mnt/user/data/media/yt-dlp-audio
+Video output: /mnt/user/data/media/yt-dlp
+Video Plex library: yt-dlp
+Video Plex path: /data/yt-dlp
 ```
 
 Use the slash command when possible:
 
 ```text
 /yt-dlp <url> [url ...]
-/yt-dlp --audio <url> [url ...]
+/yt-dlp --video <url> [url ...]
 ```
 
 MeTube is deployed on `tootie` and writes into the Plex-visible media share. SWAG exposes the UI at `https://metube.tootie.tv`.
@@ -45,17 +46,17 @@ Use local mode for filesystem-local jobs:
 
 ```text
 /yt-dlp --local <url> [url ...]
-/yt-dlp --local --audio <url> [url ...]
+/yt-dlp --local --video <url> [url ...]
 ```
 
 Local defaults:
 
 ```text
-video dir: $PWD/downloads/yt-dlp
 audio dir: $PWD/downloads/yt-dlp-audio
-archive: <download-dir>/.archive.txt
-video format: bestvideo*+bestaudio/best
+video dir: $PWD/downloads/yt-dlp
+archive: $PWD/downloads/.archive.txt
 audio format: m4a
+video format: bestvideo*+bestaudio/best
 ```
 
 Environment overrides:
@@ -106,6 +107,7 @@ Notes:
 - `mkv` is the safest merge container for mixed codecs and embedded subtitles. Use MP4 only when the user explicitly needs MP4 compatibility.
 - Subtitles and auto subtitles are downloaded when available. Some sites do not expose usable subtitles.
 - Sidecars (`.info.json`, thumbnails, descriptions) are intentional; they preserve durable metadata for later indexing or retagging.
+- Archive files are intentionally global to the workflow, not per playlist folder. This prevents reruns from duplicating items after output templates or playlist folders change.
 
 For audio-only local downloads, use `--extract-audio --audio-format m4a` by default. Use `opus` for efficient/loss-minimizing YouTube audio; use `mp3` only for compatibility.
 
