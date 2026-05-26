@@ -1,4 +1,0 @@
-interface:
-  display_name: "yt-dlp Dlp Music"
-  short_description: "\"search YouTube for music\", \"download an album\", \"download a..."
-  default_prompt: "Use $yt-dlp-music for \"search YouTube for music\", \"download an album\", \"download a."
