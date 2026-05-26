@@ -21,7 +21,7 @@ teardown() { rm -rf "$TMP"; }
 
   bus="$CLAUDE_PROJECT_DIR/.broadcastr/events.jsonl"
   [ "$(jq -sr '.[0].summary' "$bus")" = 'Claude joined: `lab/.worktrees/some-worktree`' ]
-  [ "$(jq -sr '.[1].summary' "$bus")" = "Claude left" ]
+  [ "$(jq -sr '.[1].summary' "$bus")" = 'Claude left: `lab/.worktrees/some-worktree`' ]
   [ "$(jq -sr '.[0].data.cwd' "$bus")" = "$CLAUDE_PROJECT_DIR" ]
   [ "$(jq -sr '.[0].data.agent' "$bus")" = "Claude" ]
 }
@@ -29,7 +29,9 @@ teardown() { rm -rf "$TMP"; }
 @test "session lifecycle summary honors explicit agent name" {
   export BROADCASTR_AGENT_NAME=Codex
   "$PLUGIN_ROOT/scripts/hook-on-session-start.sh"
+  "$PLUGIN_ROOT/scripts/hook-on-stop.sh"
 
   bus="$CLAUDE_PROJECT_DIR/.broadcastr/events.jsonl"
   [ "$(jq -sr '.[0].summary' "$bus")" = 'Codex joined: `lab/.worktrees/some-worktree`' ]
+  [ "$(jq -sr '.[1].summary' "$bus")" = 'Codex left: `lab/.worktrees/some-worktree`' ]
 }
