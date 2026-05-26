@@ -1,6 +1,6 @@
 ---
 description: broadcastr status / recent / mute / emit
-argument-hint: [status|recent|mute|emit] [args...]
+argument-hint: "[status|recent|mute|emit] [args...]"
 ---
 
 Run the broadcastr CLI: `${CLAUDE_PLUGIN_ROOT}/bin/broadcastr $ARGUMENTS`.

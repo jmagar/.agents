@@ -1,24 +1,22 @@
-{
-  "monitors": [
-    {
-      "name": "broadcastr-feed",
-      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/tail-bus.sh",
-      "description": "Live homelab activity feed (broadcastr)"
-    },
-    {
-      "name": "broadcastr-alerts",
-      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/alert-gateway.sh",
-      "description": "Routes alert-tier events to apprise"
-    },
-    {
-      "name": "broadcastr-plans",
-      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/watch-plans.sh",
-      "description": "Watches plan dirs and emits plan / plan-exec events"
-    },
-    {
-      "name": "broadcastr-sessions",
-      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/watch-sessions.sh",
-      "description": "Watches docs/sessions and emits session-doc events"
-    }
-  ]
-}
+[
+  {
+    "name": "broadcastr-feed",
+    "command": "${CLAUDE_PLUGIN_ROOT}/scripts/tail-bus.sh",
+    "description": "Live homelab activity feed (broadcastr)"
+  },
+  {
+    "name": "broadcastr-alerts",
+    "command": "${CLAUDE_PLUGIN_ROOT}/scripts/alert-gateway.sh",
+    "description": "Routes alert-tier events to apprise"
+  },
+  {
+    "name": "broadcastr-plans",
+    "command": "${CLAUDE_PLUGIN_ROOT}/scripts/watch-plans.sh",
+    "description": "Watches plan dirs and emits plan / plan-exec events"
+  },
+  {
+    "name": "broadcastr-sessions",
+    "command": "${CLAUDE_PLUGIN_ROOT}/scripts/watch-sessions.sh",
+    "description": "Watches docs/sessions and emits session-doc events"
+  }
+]
