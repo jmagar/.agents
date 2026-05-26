@@ -11,7 +11,7 @@ Use this skill for the whole yt-dlp domain: ad hoc video downloads, playlists, c
 
 - Download only content the user is authorized to download, such as their own uploads, public-domain material, Creative Commons/licensed content, or content they otherwise have rights to keep.
 - Prefer the NAS/MeTube path for ad hoc downloads that should land in Plex.
-- Default to audio-only downloads. Use video mode only when the user asks for video, visual media, Plex video library, or explicitly passes `--video`.
+- Default to audio-only downloads. Use video mode only when the user asks for video, visual media, Plex video library, or explicitly passes `--video`. Use both mode when the user asks to grab both audio and video or explicitly passes `--both`.
 - Use local `yt-dlp` only when the user asks for local output, debugging, inspection, search, or a destination outside the NAS.
 - Prefer preview and confirmation before downloading ambiguous searches, full albums, large channels, very large playlists, or unofficial uploads.
 - Do not invent metadata. Preserve extracted metadata and sidecars; report missing fields instead of guessing.
@@ -36,9 +36,12 @@ Use the slash command when possible:
 ```text
 /yt-dlp <url> [url ...]
 /yt-dlp --video <url> [url ...]
+/yt-dlp --both <url> [url ...]
 ```
 
 MeTube is deployed on `tootie` and writes into the Plex-visible media share. SWAG exposes the UI at `https://metube.tootie.tv`.
+
+NAS `--both` runs `yt-dlp` directly inside the `metube` container over SSH instead of submitting two MeTube queue jobs. This keeps audio and video archive state separate so one format does not cause the other to be skipped by MeTube's global archive.
 
 ### Local downloads
 
@@ -47,6 +50,7 @@ Use local mode for filesystem-local jobs:
 ```text
 /yt-dlp --local <url> [url ...]
 /yt-dlp --local --video <url> [url ...]
+/yt-dlp --local --both <url> [url ...]
 ```
 
 Local defaults:
@@ -55,6 +59,8 @@ Local defaults:
 audio dir: $PWD/downloads/yt-dlp-audio
 video dir: $PWD/downloads/yt-dlp
 archive: $PWD/downloads/.archive.txt
+both-mode audio archive: $PWD/downloads/.archive-audio.txt
+both-mode video archive: $PWD/downloads/.archive-video.txt
 audio format: m4a
 video format: bestvideo*+bestaudio/best
 ```
@@ -63,11 +69,18 @@ Environment overrides:
 
 ```text
 METUBE_URL
+METUBE_BOTH_ROUTE
+METUBE_CONTAINER
 METUBE_QUALITY
 METUBE_FORMAT
+METUBE_FORMAT_SELECTOR
 METUBE_AUDIO_FORMAT
+METUBE_AUDIO_ARCHIVE
+METUBE_VIDEO_ARCHIVE
+YT_DLP_NAS_HOST
 YT_DLP_DOWNLOAD_DIR
 YT_DLP_ARCHIVE
+YT_DLP_VIDEO_ARCHIVE
 YT_DLP_FORMAT
 YT_DLP_OUTPUT_TEMPLATE
 YT_DLP_AUDIO_DOWNLOAD_DIR
