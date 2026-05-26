@@ -32,11 +32,22 @@ STARTUP="$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
 
 format_line() {
   jq --unbuffered -rc --arg sid "$SESSION_ID" --arg startup "$STARTUP" --argjson mute "$MUTE_JQ" '
+    def tier_label:
+      if .tier == "info" then "i"
+      elif .tier == "alert" then "!"
+      else (.tier // "?")
+      end;
+    def category_label:
+      if .category == "agent-presence" then "presence"
+      elif .category == "pre-commit" then "precommit"
+      elif .category == "session-doc" then "session"
+      else (.category // "?")
+      end;
     . as $e
     | select((.emitter.session_id // "") != $sid)
     | select(.ts > $startup)
     | select(.category as $c | $mute | index($c) | not)
-    | "[" + .tier + "] " + .category + " · " + .summary + " · " + (.emitter.agent // "?") + "@" + (.emitter.host // "?")
+    | "[" + tier_label + "] " + category_label + " " + (.summary // "") + " @" + (.emitter.host // "?")
   '
 }
 

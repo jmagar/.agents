@@ -69,6 +69,19 @@ teardown() { rm -rf "$TMP"; }
   [ "$count" = "1" ] || { echo "expected 1, got $count"; cat "$TMP/out.txt"; false; }
 }
 
+@test "tail-bus formats feed lines compactly" {
+  ( CLAUDE_SESSION_ID=mine timeout 3 "$PLUGIN_ROOT/scripts/tail-bus.sh" > "$TMP/out.txt" 2>&1 || true ) &
+  TAILPID=$!
+  sleep 1
+  CLAUDE_SESSION_ID=other "$PLUGIN_ROOT/scripts/emit.sh" \
+    --category agent-presence --tier info --summary "joined: repo"
+  sleep 1
+  kill $TAILPID 2>/dev/null || true
+  wait 2>/dev/null || true
+
+  grep -q '^\[i\] presence joined: repo @testbox$' "$TMP/out.txt"
+}
+
 @test "tail-bus drops pre-startup events" {
   CLAUDE_SESSION_ID=other "$PLUGIN_ROOT/scripts/emit.sh" --category commit --tier info --summary "before-start"
   sleep 1.1
