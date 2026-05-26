@@ -1,10 +1,10 @@
 ---
-description: Download videos or playlists with yt-dlp
+description: Download audio from URLs with yt-dlp
 argument-hint: "<url> [url ...]"
 allowed-tools: Bash
 ---
 
-Download requested video or playlist URLs immediately:
+Download requested audio URLs immediately:
 
 !`bash -c 'set -euo pipefail
 
@@ -15,7 +15,7 @@ fi
 
 args_string="${1:-}"
 if [ -z "${args_string//[[:space:]]/}" ]; then
-  echo "Usage: /yt-dlp <url> [url ...]" >&2
+  echo "Usage: /yt-dlp-audio <url> [url ...]" >&2
   exit 2
 fi
 
@@ -32,17 +32,18 @@ for url in "${urls[@]}"; do
   esac
 done
 
-download_dir="${YT_DLP_DOWNLOAD_DIR:-$PWD/downloads/yt-dlp}"
-archive_file="${YT_DLP_ARCHIVE:-$download_dir/.archive.txt}"
-format_selector="${YT_DLP_FORMAT:-bestvideo*+bestaudio/best}"
-output_template="${YT_DLP_OUTPUT_TEMPLATE:-%(playlist_title|single)s/%(playlist_index|000)s-%(upload_date>%Y-%m-%d)s-%(title).200B-%(id)s.%(ext)s}"
+download_dir="${YT_DLP_AUDIO_DOWNLOAD_DIR:-${YT_DLP_DOWNLOAD_DIR:-$PWD/downloads/yt-dlp-audio}}"
+archive_file="${YT_DLP_AUDIO_ARCHIVE:-${YT_DLP_ARCHIVE:-$download_dir/.archive.txt}}"
+audio_format="${YT_DLP_AUDIO_FORMAT:-m4a}"
+output_template="${YT_DLP_AUDIO_OUTPUT_TEMPLATE:-%(playlist_title|singles)s/%(playlist_index|000)s-%(title).200B-%(id)s.%(ext)s}"
 
 mkdir -p "$download_dir"
 
-echo "Downloading to: $download_dir"
+echo "Downloading audio to: $download_dir"
 echo "Archive file: $archive_file"
 yt-dlp \
-  --format "$format_selector" \
+  --extract-audio \
+  --audio-format "$audio_format" \
   --paths "$download_dir" \
   --download-archive "$archive_file" \
   --output "$output_template" \
@@ -56,4 +57,4 @@ yt-dlp \
   --no-overwrites \
   --continue \
   -- "${urls[@]}"
-' yt-dlp-download "$ARGUMENTS"`
+' yt-dlp-audio-download "$ARGUMENTS"`
