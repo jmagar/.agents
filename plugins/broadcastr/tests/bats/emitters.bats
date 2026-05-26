@@ -42,12 +42,13 @@ init_git_repo() {
 
 @test "pre-commit emits start and pass events" {
   init_git_repo
+  branch="$(git symbolic-ref --short HEAD)"
   echo "hello" > a.txt
   git add a.txt
   git commit -q -m "pre-commit pass"
 
-  grep -q '"category":"pre-commit".*"summary":"pre-commit start on' "$(bus)"
-  grep -q '"category":"pre-commit".*"summary":"pre-commit pass on' "$(bus)"
+  [ "$(jq -sr '.[0].summary' "$(bus)")" = "pre-commit start on $branch" ]
+  [ "$(jq -sr '.[1].summary' "$(bus)")" = "pre-commit pass on $branch" ]
 }
 
 @test "pre-commit emits alert on previous hook failure" {

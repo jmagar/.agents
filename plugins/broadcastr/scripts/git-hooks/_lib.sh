@@ -18,7 +18,13 @@ bcr_hook_init() {
   PLUGIN_ROOT="${BROADCASTR_PLUGIN_ROOT:-$HOME/.claude/plugins/broadcastr}"
   HOOK_DIR="${BROADCASTR_HOOK_DIR:-$(dirname "$0")}"
   PREV="$HOOK_DIR/${hook_name}.broadcastr-prev"
-  BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')"
+  BRANCH="$(git symbolic-ref --short HEAD 2>/dev/null || true)"
+  if [ -z "$BRANCH" ]; then
+    BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+  fi
+  if [ -z "$BRANCH" ] || [ "$BRANCH" = "HEAD" ]; then
+    BRANCH="?"
+  fi
 }
 
 bcr_chain_prev() {
