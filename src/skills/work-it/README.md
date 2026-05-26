@@ -1,11 +1,11 @@
 # work-it
 
-End-to-end worktree execution workflow: take a plan file, implement it, verify, open a PR, run cleanup + review sweeps, address review comments, save a session log, and commit/push the final state.
+End-to-end worktree execution workflow: take a plan file, create an isolated worktree, dispatch an implementation agent to execute the plan there, verify, open a PR, run cleanup + review sweeps, address review comments, save a session log, and commit/push the final state.
 
 ## What it does
 
 1. **Worktree** — isolate the work in a fresh worktree.
-2. **Implement** — execute the plan; iterate until tests/lints/build are green. Commit as you go.
+2. **Dispatch implementation** — send an agent into the worktree to run `superpowers:executing-plans`; it iterates until tests/lints/build are green.
 3. **PR immediately** — open the PR as soon as it's green so CodeRabbit etc. can start reviewing in parallel.
 4. **Cleanup** — `lavra-review` pass.
 5. **Three `code_simplifier` passes** — impl files, tests, docs (one pass each).
@@ -22,5 +22,5 @@ Triggers: "work it", execute a `superpowers:executing-plans` document in a workt
 
 ## Files
 
-- `SKILL.md` — the workflow + non-negotiables + agent dispatch guidance
+- `SKILL.md` — the workflow + non-negotiables + implementation/review agent dispatch guidance
 - `agents/openai.yaml` — OpenAI runtime metadata

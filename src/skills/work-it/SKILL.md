@@ -1,6 +1,6 @@
 ---
 name: work-it
-description: End-to-end worktree execution workflow for completing a plan file through implementation, full verification, immediate PR creation, lavra-review cleanup, multiple code_simplifier passes, pr-review-toolkit sweeps, GitHub PR comment resolution, vibin:save-to-md session capture, and final git add/commit/push. Use when the user asks to "work it", execute a superpowers executing-plans document in a worktree, create a PR as soon as the implemented plan is green, or run a complete review-and-fix loop over all touched files.
+description: Use when the user asks to "work it", execute a superpowers executing-plans document in a worktree, create a PR as soon as the implemented plan is green, or run a complete review-and-fix loop over all touched files.
 ---
 
 # Work It
@@ -12,7 +12,8 @@ Use this skill to run a plan to completion in an isolated `.worktrees/` checkout
 ## Non-Negotiables
 
 - Create and work inside a `.worktrees/<slug>` checkout unless the user explicitly names an existing worktree.
-- Read the requested plan file before implementation, then execute it with the repo's `superpowers executing-plans` workflow when available.
+- Read the requested plan file before implementation, then dispatch a dedicated implementation agent inside the worktree to execute it with the repo's `superpowers:executing-plans` workflow.
+- Do not implement the plan directly in the coordinator session unless the user explicitly overrides this skill. If agent dispatch is unavailable, report the workflow as blocked rather than silently self-implementing.
 - Keep all implementation, review fixes, verification, commits, PR creation, and PR comment resolution inside the worktree.
 - Fix every issue surfaced by verification, `lavra-review`, three `code_simplifier` passes, all available `pr-review-toolkit` agents, and `gh-fetch-comments`.
 - Create the PR immediately after the plan is fully implemented and the worktree is green of all known issues, including pre-existing issues. This starts external review from CodeRabbit, Copilot, cubic-dev, and similar reviewers while later review waves run.
@@ -36,15 +37,17 @@ Use this skill to run a plan to completion in an isolated `.worktrees/` checkout
 
 2. **Load the plan**
    - Read the plan path supplied by the user, such as `docs/superpowers/plans/<date>-<name>.md`.
-   - If the `superpowers:executing-plans` skill is available, use it.
-   - Convert the plan into a live checklist and keep it updated as work proceeds.
+   - Confirm the `superpowers:executing-plans` skill is available for the implementation agent and include that requirement in the dispatch prompt.
+   - Convert the plan into a coordinator checklist for tracking the implementation agent handoff and later review phases.
    - Treat ambiguous plan items as requirements to clarify through repo evidence before editing.
 
-3. **Implement to green**
-   - Make scoped changes that satisfy every plan item.
-   - Include any pre-existing worktree failures in the repair scope.
-   - Run the repo's focused tests first, then the full required validation for the touched surface.
-   - Iterate until the entire worktree is green: tests, lint, formatting, build, typecheck, generated artifacts, or any repo-specific gates.
+3. **Dispatch implementation agent to green**
+   - Dispatch one implementation agent whose working directory is the worktree root.
+   - Instruct the agent to invoke `superpowers:executing-plans` and execute the plan file from inside the worktree.
+   - Give the agent the plan path, base branch, worktree path, branch name, repo validation hints, and this constraint: all implementation, focused tests, full verification, and any repair work must happen inside the worktree.
+   - Require the agent to make scoped changes that satisfy every plan item, include any pre-existing worktree failures in the repair scope, and iterate until the entire worktree is green: tests, lint, formatting, build, typecheck, generated artifacts, or any repo-specific gates.
+   - Require the agent to return a concise handoff with changed files, plan items completed, verification commands and results, remaining risks, and whether the worktree is clean or dirty.
+   - When the agent returns, inspect `git status --short`, review the changed files enough to understand the implementation, and run or re-run the reported verification before proceeding.
 
 4. **Create the PR immediately**
    - Commit as soon as the plan is fully implemented and the worktree is green of all known issues, including pre-existing failures.
@@ -98,12 +101,13 @@ Use this skill to run a plan to completion in an isolated `.worktrees/` checkout
 
 Use agents when the current runtime supports them and the user has asked for this full workflow. Keep ownership explicit:
 
+- Implementation agent: execute the plan with `superpowers:executing-plans` inside the worktree and return only after the plan is implemented and verification is green.
 - `code_simplifier` pass 1: touched implementation files.
 - `code_simplifier` pass 2: touched tests and fixtures.
 - `code_simplifier` pass 3: touched docs, config, generated surfaces, and cross-file consistency.
 - `pr-review-toolkit` agents: dispatch every available toolkit role with the PR number, branch, touched-file list, and verification commands.
 
-If an exact named agent or command is unavailable, use the closest repo-local skill, script, or CLI equivalent and state the substitution in the final report.
+If an exact named review agent or command is unavailable, use the closest repo-local skill, script, or CLI equivalent and state the substitution in the final report. This fallback does not apply to the implementation agent: if no agent-dispatch mechanism exists, stop and report the implementation phase as blocked.
 
 ## Completion Standard
 
