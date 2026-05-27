@@ -44,7 +44,7 @@ format_line() {
       else (.category // "?")
       end;
     . as $e
-    | select((.emitter.session_id // "") != $sid)
+    | select($sid == "" or .emitter.session_id == null or .emitter.session_id != $sid)
     | select(.ts > $startup)
     | select(.category as $c | $mute | index($c) | not)
     | "[" + tier_label + "] " + category_label + " " + (.summary // "") + " @" + (.emitter.host // "?")

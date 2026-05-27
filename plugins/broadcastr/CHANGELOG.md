@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.1.3] - 2026-05-27
+- Fixed monitor self-suppression bug: `tail-bus.sh` now shows events when `CLAUDE_SESSION_ID` is not set in the environment (null session_id was incorrectly treated as equal to the empty monitor sid, suppressing every event).
+
 ## [0.1.2] - 2026-05-26
 - Made monitor scripts fall back to their current working directory when Claude does not provide `CLAUDE_PROJECT_DIR`.
 
