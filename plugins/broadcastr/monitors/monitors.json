@@ -2,21 +2,21 @@
   {
     "name": "broadcastr-feed",
     "command": "${CLAUDE_PLUGIN_ROOT}/scripts/tail-bus.sh",
-    "description": "Live homelab activity feed (broadcastr)"
+    "description": "Other agents' activity: joins, commits, pushes, doc saves, bead ops. Relay each output line verbatim — do not paraphrase."
   },
   {
     "name": "broadcastr-alerts",
     "command": "${CLAUDE_PLUGIN_ROOT}/scripts/alert-gateway.sh",
-    "description": "Routes alert-tier events to apprise"
+    "description": "Forwards alert-tier events (push failures, pre-commit failures) to apprise notifications"
   },
   {
     "name": "broadcastr-plans",
     "command": "${CLAUDE_PLUGIN_ROOT}/scripts/watch-plans.sh",
-    "description": "Watches plan dirs and emits plan / plan-exec events"
+    "description": "Watches docs/plans and docs/superpowers/plans for new/changed plan files"
   },
   {
     "name": "broadcastr-sessions",
     "command": "${CLAUDE_PLUGIN_ROOT}/scripts/watch-sessions.sh",
-    "description": "Watches docs/sessions and emits session-doc events"
+    "description": "Watches docs/sessions for new session doc files"
   }
 ]
