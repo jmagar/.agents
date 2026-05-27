@@ -53,7 +53,8 @@ format_line() {
     | select($sid == "" or .emitter.session_id == null or .emitter.session_id != $sid)
     | select(.ts > $startup)
     | select(.category as $c | $mute | index($c) | not)
-    | tier_icon + " broadcastr [" + category_label + "] " + (.summary // "") + " · @" + (.emitter.host // "?")
+    | ((.repo // "") | split("/") | last) as $proj
+    | tier_icon + " broadcastr [" + category_label + "] " + (.summary // "") + " · " + $proj + "@" + (.emitter.host // "?")
   '
 }
 
