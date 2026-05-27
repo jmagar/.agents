@@ -6,13 +6,6 @@
           { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/scripts/hook-on-session-start.sh" }
         ]
       }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/scripts/hook-on-stop.sh" }
-        ]
-      }
     ]
   }
 }
