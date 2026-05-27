@@ -508,7 +508,7 @@
       "name": "broadcastr",
       "source": "./plugins/broadcastr",
       "description": "Real-time activity broadcast across concurrent Claude Code sessions. Captures commits and plan/session document activity into a shared JSONL bus.",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "category": "homelab"
     }
   ]
