@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.0] - 2026-05-27
+### Changed
+- Rewrote all monitor logic from shell scripts + jq into a single Rust binary (`bin-src/broadcastr/`)
+- `broadcastr monitor` replaces the 4 separate monitor scripts: `tail-bus.sh`, `alert-gateway.sh`, `watch-sessions.sh`, `watch-plans.sh`
+- `monitors.json` reduced from 4 entries to 1: `broadcastr monitor`
+- `bin/broadcastr` is now the compiled Rust binary (was a shell dispatch wrapper)
+- New subcommands: `monitor`, `tail`, `recent`, `status`, `emit` — all in one binary
+- `format-line.jq` removed — formatting logic lives in `src/format.rs`
+- Scripts kept: `emit.sh` (git/claude hook compat), `hook-on-session-start.sh`, `hook-on-stop.sh`, `hook-classify-bash.sh`, `push-wrapper.sh`
+
 ## [0.1.3] - 2026-05-27
 ### Changed
 - `tail-bus.sh` `format_line`: full output format redesign:
