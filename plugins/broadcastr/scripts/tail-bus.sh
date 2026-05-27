@@ -32,22 +32,28 @@ STARTUP="$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
 
 format_line() {
   jq --unbuffered -rc --arg sid "$SESSION_ID" --arg startup "$STARTUP" --argjson mute "$MUTE_JQ" '
-    def tier_label:
-      if .tier == "info" then "i"
-      elif .tier == "alert" then "!"
-      else (.tier // "?")
+    def tier_icon:
+      if .tier == "alert" then "🚨"
+      else "📡"
       end;
     def category_label:
       if .category == "agent-presence" then "presence"
       elif .category == "pre-commit" then "precommit"
-      elif .category == "session-doc" then "session"
+      elif .category == "session-doc" then "session-doc"
+      elif .category == "session-start" then "session-start"
+      elif .category == "commit" then "commit"
+      elif .category == "push" then "push"
+      elif .category == "bead" then "bead"
+      elif .category == "stash" then "stash"
+      elif .category == "plan" then "plan"
+      elif .category == "plan-exec" then "plan-exec"
       else (.category // "?")
       end;
     . as $e
     | select($sid == "" or .emitter.session_id == null or .emitter.session_id != $sid)
     | select(.ts > $startup)
     | select(.category as $c | $mute | index($c) | not)
-    | "[" + tier_label + "] " + category_label + " " + (.summary // "") + " @" + (.emitter.host // "?")
+    | tier_icon + " broadcastr [" + category_label + "] " + (.summary // "") + " · @" + (.emitter.host // "?")
   '
 }
 
