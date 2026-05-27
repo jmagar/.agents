@@ -13,14 +13,6 @@
           { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/scripts/hook-on-stop.sh" }
         ]
       }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/scripts/hook-classify-bash.sh" }
-        ]
-      }
     ]
   }
 }

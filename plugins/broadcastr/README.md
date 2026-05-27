@@ -1,6 +1,6 @@
 # broadcastr
 
-Real-time activity broadcast across concurrent Claude Code sessions. Captures commits, plan edits, bash commands into a shared JSONL bus; each session sees a notification when other sessions do something interesting.
+Real-time activity broadcast across concurrent Claude Code sessions. Captures commits and plan/session document activity into a shared JSONL bus; each session sees a notification when other sessions do something interesting.
 
 ## Install
 
@@ -17,7 +17,7 @@ Once installed, when another Claude session in any repo commits, edits a plan, o
 
 ## Components
 
-- Auto-emitters: Claude hooks (SessionStart, Stop, bash-classifier), git hooks (commit, push, branch), inotify watchers (plan files, session docs).
+- Auto-emitters: Claude hooks (SessionStart, Stop), git hooks (commit, push, branch), inotify watchers (plan files, session docs).
 - Feed monitor: tails the bus and surfaces each event as a Claude notification line. Self-suppresses your own session's events.
 - Apprise gateway: routes alert-tier events to your phone via apprise.
 

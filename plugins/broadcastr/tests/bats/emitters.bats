@@ -27,19 +27,6 @@ init_git_repo() {
   "$PLUGIN_ROOT/skills/broadcastr-install-hooks/scripts/install-git-hooks.sh"
 }
 
-@test "bash classifier emits bead and stash events" {
-  printf '{"tool_input":{"command":"bd close lab-123 --reason done"}}' \
-    | "$PLUGIN_ROOT/scripts/hook-classify-bash.sh"
-  printf '{"tool_input":{"command":"git stash list || true"}}' \
-    | "$PLUGIN_ROOT/scripts/hook-classify-bash.sh"
-
-  [ "$(jq -sr '.[0].category' "$(bus)")" = "bead" ]
-  [ "$(jq -sr '.[0].summary' "$(bus)")" = "bd: bd close lab-123 --reason done" ]
-  [ "$(jq -sr '.[0].data.cmd' "$(bus)")" = "bd close lab-123 --reason done" ]
-  [ "$(jq -sr '.[1].category' "$(bus)")" = "stash" ]
-  [ "$(jq -sr '.[1].summary' "$(bus)")" = "git stash: git stash list || true" ]
-}
-
 @test "pre-commit emits start and pass events" {
   init_git_repo
   branch="$(git symbolic-ref --short HEAD)"
