@@ -1,38 +1,75 @@
 # broadcastr
 
-Real-time activity broadcast across concurrent Claude Code sessions. Captures commits and plan/session document activity into a shared JSONL bus; each session sees a notification when other sessions do something interesting.
+Real-time activity feed across concurrent Claude Code sessions. Every session
+emits events to a shared JSONL bus; every other session sees a notification line
+as they happen.
 
 ## Install
 
-This plugin ships via the `~/.agents` marketplace.
+Ships via the `~/.agents` marketplace. Run `broadcastr-install-hooks` in each
+repo to add git-hook emitters.
 
 ## What you see
 
-Once installed, when another Claude session in any repo commits, edits a plan, or fails a push, your session gets a notification line:
-
 ```
-[info] commit · commit a1b2c3d: Fix auth race · claude-code@dookie
-[alert] push · git push failed on feature/x · claude-code@steamy
+📡 👤[lab] Claude joined
+📡 🌿[aurora-design-system] Claude made commit a1b2c3d: fix token handling
+🚨 🌿[syslog-mcp] Claude's push FAILED · feature/x
+📡 📝[axon_rust] Claude saved: 2026-05-27-android-bugfix.md
+📡 🎯[lab] Claude closed beads-042
+📡 🌿[lab] Claude switched to · feature/new-thing
+📡 👤[lab] Claude left
 ```
 
-## Components
+Your own session's events are suppressed. Alert-tier events (`🚨`) are also
+forwarded to your phone via apprise.
 
-- Auto-emitters: Claude hooks (SessionStart, Stop), git hooks (commit, push, branch), inotify watchers (plan files, session docs).
-- Feed monitor: tails the bus and surfaces each event as a Claude notification line. Self-suppresses your own session's events.
-- Apprise gateway: routes alert-tier events to your phone via apprise.
+## Events
+
+| Glyph | Categories | Source |
+|-------|-----------|--------|
+| 👤 | `agent-presence` — joined / left | Claude SessionStart / Stop hooks |
+| 📝 | `session-doc` — session doc saved | inotify on `docs/sessions/` |
+| 📝 | `plan` / `plan-exec` — plan file edited | inotify on `docs/plans/` |
+| 🌿 | `commit` — commit or merge | git post-commit / post-merge hooks |
+| 🌿 | `push` — attempt / success / **FAILED** | git pre-push hook + push-wrapper |
+| 🌿 | `pre-commit` — start / pass / **FAILED** | git pre-commit hook |
+| 🌿 | `branch` — branch switch | git post-checkout hook |
+| 🌿 | `stash` — git stash | Claude bash classifier |
+| 🎯 | `bead` — create / update / close / reopen | Claude bash classifier |
+
+## Architecture
+
+One monitor process (`broadcastr monitor`) covers everything:
+- **Main thread** — polls per-repo + global bus, deduplicates, formats, prints to stdout
+- **Thread** — inotify on `docs/sessions/`, emits `session-doc` events
+- **Thread** — inotify on `docs/plans/`, emits `plan` events
+- **Thread** — tails global bus for alert-tier events, dispatches to apprise
+
+Events live in two JSONL files:
+- Per-repo: `<repo>/.broadcastr/events.jsonl` (gitignored)
+- Global: `~/.claude/broadcastr/events.jsonl` (cross-repo, host-local)
 
 ## Configuration
 
-See `userConfig` in `.claude-plugin/plugin.json`. Override per-session with env vars:
-- `BROADCASTR_DISABLED=1` — silence this session entirely
-- `BROADCASTR_GLOBAL_FEED=0` — don't tail the global bus
-- `BROADCASTR_MUTE=plan-exec,session-doc` — drop these categories
+Override per-session with env vars (or set in `userConfig`):
+
+| Var | Default | Effect |
+|-----|---------|--------|
+| `BROADCASTR_DISABLED` | `0` | `1` = silence this session entirely |
+| `BROADCASTR_GLOBAL_FEED` | `1` | `0` = per-repo bus only |
+| `BROADCASTR_MUTE` | _(empty)_ | Comma-separated categories to suppress |
+
+## CLI
+
+```bash
+broadcastr emit <category> <tier> <summary> [--data <json>]
+broadcastr tail
+broadcastr recent [--since=5m]
+broadcastr status
+```
 
 ## Skills
 
-- `broadcastr` — user-facing: read the feed, mute, emit manually
+- `broadcastr` — read the feed, mute categories, emit manually
 - `broadcastr-install-hooks` — idempotent per-repo git-hook installer
-
-## Spec
-
-`docs/specs/2026-05-25-broadcastr-design.md` in the parent repo.
