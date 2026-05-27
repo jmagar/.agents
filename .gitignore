@@ -13,3 +13,4 @@ src/mcp/.env
 # Python caches
 __pycache__/
 *.py[cod]
+.broadcastr
