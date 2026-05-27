@@ -4,7 +4,7 @@
 # muted categories, and formats one display line per event to stdout.
 set -uo pipefail
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
-REPO="${CLAUDE_PROJECT_DIR:?must set CLAUDE_PROJECT_DIR}"
+REPO="${CLAUDE_PROJECT_DIR:-$PWD}"
 SESSION_ID="${CLAUDE_SESSION_ID:-}"
 
 PER_REPO_BUS="$REPO/.broadcastr/events.jsonl"

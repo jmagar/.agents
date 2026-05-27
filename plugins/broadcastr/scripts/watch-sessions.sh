@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
-REPO="${CLAUDE_PROJECT_DIR:?must set CLAUDE_PROJECT_DIR}"
+REPO="${CLAUDE_PROJECT_DIR:-$PWD}"
 
 handle() {
   local line="$1"
