@@ -4,7 +4,7 @@ targets:
   - claude
 description: |
   Real-time activity broadcast across concurrent Claude Code sessions.
-  Captures commits, plan edits, bash commands into a shared JSONL bus;
+  Captures commits and plan/session document activity into a shared JSONL bus;
   each session sees what others are doing via the feed monitor.
 v2_planned:
   - codex bridge (UserPromptSubmit injection or codex-app-server subscriber)

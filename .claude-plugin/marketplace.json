@@ -507,8 +507,8 @@
     {
       "name": "broadcastr",
       "source": "./plugins/broadcastr",
-      "description": "Real-time activity broadcast across concurrent Claude Code sessions. Captures commits, plan edits, bash commands into a shared JSONL bus.",
-      "version": "0.1.0",
+      "description": "Real-time activity broadcast across concurrent Claude Code sessions. Captures commits and plan/session document activity into a shared JSONL bus.",
+      "version": "0.1.1",
       "category": "homelab"
     }
   ]
