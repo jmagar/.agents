@@ -5,7 +5,7 @@
     "name": "jmagar",
     "email": "jmagar@gmail.com"
   },
-  "description": "Curated third-party and upstream Claude Code plugins — favored external plugins sourced from their original repos.",
+  "description": "Curated third-party and upstream Claude Code plugins \u2014 favored external plugins sourced from their original repos.",
   "plugins": [
     {
       "name": "agent-browser",
@@ -182,7 +182,7 @@
         "source": "url",
         "url": "https://github.com/coderabbitai/claude-plugin.git"
       },
-      "description": "Your code review partner. CodeRabbit provides external validation using a specialized AI architecture and 40+ integrated static analyzers — offering a different perspective that catches bugs, security vulnerabilities, logic errors, and edge cases. Context-aware analysis via AST parsing and codegraph relationships. Automatically incorporates CLAUDE.md and project coding guidelines into reviews. Free to use."
+      "description": "Your code review partner. CodeRabbit provides external validation using a specialized AI architecture and 40+ integrated static analyzers \u2014 offering a different perspective that catches bugs, security vulnerabilities, logic errors, and edge cases. Context-aware analysis via AST parsing and codegraph relationships. Automatically incorporates CLAUDE.md and project coding guidelines into reviews. Free to use."
     },
     {
       "name": "comprehensive-review",
@@ -200,7 +200,7 @@
         "url": "https://github.com/wshobson/agents.git",
         "path": "plugins/conductor"
       },
-      "description": "Context-Driven Development plugin that transforms Claude Code into a project management tool with structured workflow: Context → Spec & Plan → Implement"
+      "description": "Context-Driven Development plugin that transforms Claude Code into a project management tool with structured workflow: Context \u2192 Spec & Plan \u2192 Implement"
     },
     {
       "name": "discord",
@@ -316,7 +316,7 @@
         "url": "https://github.com/anthropics/claude-plugins-official.git",
         "path": "plugins/playground"
       },
-      "description": "Creates interactive HTML playgrounds — self-contained single-file explorers with visual controls, live preview, and prompt output with copy button."
+      "description": "Creates interactive HTML playgrounds \u2014 self-contained single-file explorers with visual controls, live preview, and prompt output with copy button."
     },
     {
       "name": "plugin-dev",
@@ -415,7 +415,7 @@
         "url": "https://github.com/anthropics/claude-plugins-official.git",
         "path": "plugins/session-report"
       },
-      "description": "Generate an explorable HTML report of Claude Code session usage — tokens, cache efficiency, subagents, skills, and the most expensive prompts — from local ~/.claude/projects transcripts."
+      "description": "Generate an explorable HTML report of Claude Code session usage \u2014 tokens, cache efficiency, subagents, skills, and the most expensive prompts \u2014 from local ~/.claude/projects transcripts."
     },
     {
       "name": "shell-scripting",
@@ -495,6 +495,14 @@
         "path": "plugins/ui-design"
       },
       "description": "Comprehensive UI/UX design plugin for mobile (iOS, Android, React Native) and web applications with design systems, accessibility, and modern patterns"
+    },
+    {
+      "name": "webwright",
+      "source": {
+        "source": "github",
+        "repo": "MadcowD/Webwright"
+      },
+      "description": "A Playwright workflow for solving web tasks code-as-action style with a local browser and screenshot verification."
     },
     {
       "name": "zsh-tool",
