@@ -505,6 +505,14 @@
       "description": "A Playwright workflow for solving web tasks code-as-action style with a local browser and screenshot verification."
     },
     {
+      "name": "zen-mcp-server",
+      "source": {
+        "source": "github",
+        "repo": "BeehiveInnovations/zen-mcp-server"
+      },
+      "description": "Multi-model AI orchestration server exposing tools like chat, thinkdeep, planner, consensus, codereview, and debug via MCP."
+    },
+    {
       "name": "zsh-tool",
       "source": {
         "source": "github",
